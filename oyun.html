@@ -161,7 +161,7 @@
       <div class="skrow"><span class="kbd">E</span><b>Kalkan</b> — 2.5s hasarsızlık (10s)</div>
       <div class="skrow"><span class="kbd">R</span><b>Şok Dalgası</b> — alan hasarı (16s)</div>
       <div class="skrow">⏳ Haritada <b>buff noktaları</b> belirir · <b>varilleri</b> patlat, alan hasarı verir</div>
-      <div class="skrow">Odaya ilk giren <b>sunucu (host)</b> olur · herkes ona <b>doğrudan</b> bağlanır</div>
+      <div class="skrow">Özel sunucu kuruluysa herkes aynı <b>oyun sunucusuna</b> bağlanır</div>
     </div>
   </div>
 </div>
@@ -188,6 +188,7 @@
 
 <canvas id="cv"></canvas>
 
+<script src="server-config.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
@@ -236,6 +237,8 @@ const marks = [];
 const parts = [];
 const rings = [];
 let shake = 0, dmgFlash = 0, room = 'ARENA';
+let dedicated=false, gameSocket=null, reconnectTimer=null, reconnectAttempt=0;
+let pendingPing=0, lastServerMessage=0, frameMs=16.7, hudAcc=0;
 
 function inWall(x,y,m=0){
   return walls.some(w => x>w.x-m && x<w.x+w.w+m && y>w.y-m && y<w.y+w.h+m);
@@ -425,6 +428,12 @@ function needsMqtt(exclude){
   return false;
 }
 function send(o){
+  if(dedicated){
+    if(!gameSocket || gameSocket.readyState!==1) return;
+    if(o.t==='p' && gameSocket.bufferedAmount>8192) return;
+    if(gameSocket.bufferedAmount>262144){gameSocket.close();return;}
+    gameSocket.send(JSON.stringify(o)); return;
+  }
   o.n = ++seq;
   const s = JSON.stringify(o);
   if(isHost){
@@ -439,6 +448,7 @@ function send(o){
   }
 }
 function sendForced(path, o){
+  if(dedicated) return;
   o.n = ++seq;
   const s = JSON.stringify(o);
   if(path==='d'){
@@ -612,7 +622,70 @@ function tryBroker(){
   };
   ws.onerror = () => {};
 }
+function connectDedicated(url){
+  dedicated=true;
+  if(gameSocket) gameSocket.close();
+  const ws=new WebSocket(url);
+  gameSocket=ws;
+  const timeout=setTimeout(()=>{ if(ws.readyState!==1) ws.close(); },8000);
+  ws.onopen=()=>{
+    clearTimeout(timeout); reconnectAttempt=0; lastServerMessage=performance.now();
+    ws.send(JSON.stringify({t:'join',room,id:me.id,name:me.name}));
+    setStatus();
+  };
+  ws.onmessage=e=>{
+    lastServerMessage=performance.now();
+    let o; try{o=JSON.parse(e.data);}catch{return;}
+    if(o.t==='welcome'){
+      others.clear(); seenSeq.clear();
+      me.score=o.scores[me.id]||0;
+      for(const p of o.players){
+        if(p.id===me.id) continue;
+        const other=mkOther(p.id,p.name);
+        Object.assign(other,{x:p.x,y:p.y,rx:p.x,ry:p.y,ra:p.a||0,a:p.a||0,
+          hp:p.hp,score:o.scores[p.id]||0,dead:!!p.dead,seen:performance.now()});
+        other.hist.push({rt:performance.now(),x:p.x,y:p.y,a:p.a||0});
+        others.set(p.id,other);
+      }
+      // Reconnecting clients reset their simulation to a clean respawn.
+      me.dead=false; me.hp=100; me.rt=0; bullets.length=0;
+      $('dead').style.display='none'; pendingPing=0; pingsD.length=0;
+      barrels.forEach((br,i)=>{if(o.barrels[i]!==undefined){br.hp=o.barrels[i];br.dead=br.hp<=0;}});
+      buffCollected.clear(); o.buffs.forEach(w=>buffCollected.add(w));
+      send({t:'p',id:me.id,name:me.name,x:Math.round(me.x),y:Math.round(me.y),a:me.a,hp:me.hp,dead:0});
+      setStatus(); return;
+    }
+    if(o.t==='scores'){
+      me.score=o.scores[me.id]||0;
+      for(const p of others.values()) p.score=o.scores[p.id]||0;
+      return;
+    }
+    if(o.t==='pong'){
+      if(o.ts===pendingPing){
+        pingsD.push({r:Math.max(0,performance.now()-o.ts),t:Date.now()});
+        if(pingsD.length>20) pingsD.shift();
+        pendingPing=0;
+      }
+      return;
+    }
+    if(o.t==='error'){ addFeed(o.message,true); return; }
+    handle(o,'server');
+  };
+  ws.onclose=()=>{
+    clearTimeout(timeout);
+    if(gameSocket!==ws) return;
+    setStatus();
+    clearTimeout(reconnectTimer);
+    reconnectTimer=setTimeout(()=>connectDedicated(url),Math.min(10000,1000*2**reconnectAttempt++));
+  };
+  ws.onerror=()=>{};
+}
 function connect(){
+  const endpoint=window.ARENA_SERVER_URL ||
+    ((location.hostname==='localhost'||location.hostname==='127.0.0.1') ?
+      (location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws' : '');
+  if(endpoint){ connectDedicated(endpoint); return; }
+  addFeed('Özel sunucu ayarlanmamış · geçici P2P bağlantısı',true);
   const ch = room.toLowerCase();
   mtopic = 'arena-v3/' + ch;
   try { bc = new BroadcastChannel('arena-v3-'+ch); bc.onmessage = e => handle(e.data, 'bc'); } catch(e){ bc=null; }
@@ -622,7 +695,7 @@ function connect(){
 }
 setInterval(()=>{ if(mReady && mws && mws.readyState===1) mws.send(mpkt(12,0,new Uint8Array(0))); }, 50000);
 setInterval(()=>{
-  if(!running || !mReady) return;
+  if(!running || dedicated || !mReady) return;
   if(isHost) sendSig({t:'hs', id:me.id});
   else if(others.size===0 && !hostConn) send({t:'hi', id:me.id, name:me.name});
   if(!isHost && performance.now()-lastHs > 9000 && hasRTC){
@@ -632,6 +705,11 @@ setInterval(()=>{
 }, 4000);
 function setStatus(){
   const el = $('status');
+  if(dedicated){
+    const ok=gameSocket && gameSocket.readyState===1;
+    el.textContent=ok ? '🟢 Özel oyun sunucusu' : '🟡 Sunucuya yeniden bağlanıyor…';
+    el.classList.toggle('connected',!!ok); return;
+  }
   if(!mReady && !p2pUp()){
     el.textContent = '🟡 Bağlanıyor / yerel mod…';
     el.classList.remove('connected');
@@ -666,14 +744,14 @@ function handle(o, via){
   } else if(o.t==='yo'){
     if(!others.has(o.id)) others.set(o.id, mkOther(o.id,o.name));
     const p = others.get(o.id);
-    p.name=o.name; p.rx=p.x=o.x; p.ry=p.y=o.y; p.hp=o.hp; p.score=o.sc; p.dead=false;
+    p.name=o.name; p.rx=p.x=o.x; p.ry=p.y=o.y; p.hp=o.hp; if(!dedicated && Number.isFinite(o.sc)) p.score=o.sc; p.dead=!!o.dead;
     p.hist.push({rt:performance.now(), x:o.x, y:o.y, a:0});
   } else if(o.t==='p'){
     let p = others.get(o.id);
     if(!p){ p = mkOther(o.id, o.name||'?'); others.set(o.id,p); }
     if(o.n!==undefined && o.n<=p.lastPN) return;
     p.lastPN = o.n;
-    p.hp=o.hp; p.score=o.sc; p.dead=false;
+    p.hp=o.hp; if(!dedicated && Number.isFinite(o.sc)) p.score=Math.max(p.score,o.sc); p.dead=!!o.dead;
     p.sh = !!o.sh; p.dsh = !!o.dsh;
     if(o.name) p.name=o.name;
     p.seen = performance.now();
@@ -753,7 +831,7 @@ function handle(o, via){
     const killer = o.k===me.id ? me : others.get(o.k);
     const vname = victim?victim.name:'?';
     if(killer){
-      killer.score++;
+      if(!dedicated) killer.score++;
       if(killer===me){
         me.streak++;
         if(me.streak >= 3) addFeed('🔥 SERİ! '+me.streak+' öldürme!', true);
@@ -778,7 +856,7 @@ function avgOf(a){
   return s[Math.floor(s.length/2)];
 }
 function preferDcNow(){
-  return p2pUp();
+  return dedicated || p2pUp();
 }
 function avgPing(){
   const d=avgOf(pingsD), m=avgOf(pingsM);
@@ -856,12 +934,17 @@ window.addEventListener('mousedown', e => { if(e.button===0) firing=true; });
 window.addEventListener('mouseup', e => { if(e.button===0) firing=false; });
 window.addEventListener('contextmenu', e => e.preventDefault());
 
-let running=false, last=0, acc=0, pingAcc=0;
+let running=false, last=0, acc=0, pingAcc=2, lastFrameAt=0;
 
 function loop(t){
   requestAnimationFrame(loop);
   const dt = Math.min(0.05, (t-last)/1000 || 0); last = t;
   if(!running) return;
+  frameMs += (((t-lastFrameAt)||16.7)-frameMs)*0.08; lastFrameAt=t;
+  // Pause the match during a dedicated-server outage instead of playing a phantom room.
+  if(dedicated && (!gameSocket || gameSocket.readyState!==1)){
+    firing=false; draw(); updateHUD(); return;
+  }
 
   shake = Math.max(0, shake - dt*22);
   dmgFlash = Math.max(0, dmgFlash - dt*2.4);
@@ -1011,7 +1094,7 @@ function loop(t){
   }
 
   const now = performance.now();
-  const idelay = preferDcNow() ? 70 : 110;
+  const idelay = dedicated ? 80 : (preferDcNow() ? 80 : 110);
   for(const p of others.values()){
     const h = p.hist, t = now - idelay;
     if(h.length){
@@ -1024,7 +1107,7 @@ function loop(t){
           const s = (last.rt-prev.rt)/1000;
           const vx = s>0 ? (last.x-prev.x)/s : 0;
           const vy = s>0 ? (last.y-prev.y)/s : 0;
-          const et = Math.min(0.15, (t-last.rt)/1000);
+          const et = Math.min(0.08, (t-last.rt)/1000);
           p.rx = clamp(last.x+vx*et, RAD, W-RAD); p.ry = clamp(last.y+vy*et, RAD, H-RAD); p.ra = last.a;
         } else {
           for(let i=h.length-2;i>=0;i--){
@@ -1046,21 +1129,34 @@ function loop(t){
   const praw = pd ? 0.04 : 0.08;
   if(acc >= praw){
     acc = 0;
-    if(!me.dead) send({t:'p', id:me.id, name:me.name, x:Math.round(me.x), y:Math.round(me.y),
+    send({t:'p', id:me.id, name:me.name, x:Math.round(me.x), y:Math.round(me.y),
       a:+me.a.toFixed(2), hp:Math.round(me.hp), sc:me.score,
-      sh:me.shieldT>0?1:0, dsh:me.dashT>0?1:0});
+      sh:me.shieldT>0?1:0, dsh:me.dashT>0?1:0, dead:me.dead?1:0});
   }
   pingAcc += dt;
-  if(pingAcc >= 8){
-    pingAcc = 0;
-    sendForced('d', {t:'pi', id:me.id, ts:Date.now()});
-    sendForced('m', {t:'pi', id:me.id, ts:Date.now()});
-    const mm = Math.round(avgPing());
-    $('ping').textContent = 'Ping: ' + (avgOf(pingsD)||avgOf(pingsM) ? mm+' ms · '+(pd?'P2P':'sunucu') : '–');
+  if(pingAcc >= (dedicated?1:4)){
+    pingAcc=0;
+    if(dedicated){
+      if(performance.now()-lastServerMessage>12000){gameSocket.close();}
+      else if(!pendingPing || performance.now()-pendingPing>3000){
+        pendingPing=performance.now();
+        gameSocket.send(JSON.stringify({t:'ping',ts:pendingPing}));
+      }
+    }else{
+      sendForced('d',{t:'pi',id:me.id,ts:Date.now()});
+      sendForced('m',{t:'pi',id:me.id,ts:Date.now()});
+    }
+    const samples=dedicated?pingsD:(pd?pingsD:pingsM);
+    const recent=samples.filter(x=>Date.now()-x.t<25000);
+    const current=recent.length?Math.round(recent[recent.length-1].r):null;
+    $('ping').textContent='Ping: '+(current===null?'–':current+' ms')+
+      ' · '+(dedicated?'özel sunucu':pd?'P2P':'geçici sunucu')+
+      ' · '+Math.round(1000/Math.max(1,frameMs))+' FPS';
   }
 
   draw();
-  updateHUD();
+  hudAcc+=dt;
+  if(hudAcc>=0.1){hudAcc=0;updateHUD();}
 }
 requestAnimationFrame(loop);
 
