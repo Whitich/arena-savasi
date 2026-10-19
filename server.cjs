@@ -2,7 +2,7 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
 const Game=require('./game-core.js');
-const VERSION='2.1.0';
+const VERSION='3.0.0';
 function createArenaServer(options={}){
  const rooms=new Map(),sessions=new Map();
  const server=http.createServer((req,res)=>{
@@ -20,7 +20,7 @@ function createArenaServer(options={}){
  function error(ws,message,code='INVALID'){send(ws,{t:'error',message,code});}
  function generatedCode(){return crypto.randomBytes(4).toString('hex').slice(0,6).toUpperCase();}
  function newRoom(code,mode){const r=Game.createRoom(code,mode,code+'-'+crypto.randomBytes(4).toString('hex'));rooms.set(code,r);return r;}
- function welcome(ws,r,p,token){send(ws,{t:'welcome',release:VERSION,id:p.id,token,code:r.code,mode:r.mode,map:{walls:r.map.walls,barrels:r.map.barrels.map(({id,x,y})=>({id,x,y})),hazards:r.map.hazards},state:Game.snapshot(r)});}
+ function welcome(ws,r,p,token){send(ws,{t:'welcome',release:VERSION,id:p.id,token,code:r.code,mode:r.mode,map:{walls:r.map.walls,barrels:r.map.barrels.map(({id,x,y})=>({id,x,y})),hazards:r.map.hazards},state:Game.snapshot(r,p.id)});}
  function disconnect(ws){const r=ws.room,p=ws.player;if(!r||!p||p.ws!==ws)return;p.connected=false;p.disconnectedAt=Date.now();p.input={x:0,y:0,a:p.a,fire:false};p.ws=null;Game.dropFlag(r,p,null);broadcast(r,{t:'leave',id:p.id,name:p.name});ws.room=null;ws.player=null;}
  wss.on('connection',ws=>{
   if(wss.clients.size>256){ws.close(1013,'Server full');return;}
@@ -50,7 +50,7 @@ function createArenaServer(options={}){
      if(!p){
       const active=[...r.players.values()].filter(p=>p.connected).length;if(active>=16)return error(ws,'Oda dolu (16 oyuncu).');
       if(!Game.CLASSES[o.classId])return error(ws,'Bir sınıf seç.');
-      p=Game.addPlayer(r,crypto.randomUUID(),o.name,o.classId,o.cosmetics);p.ws=ws;p.shield=1;p.lastInputAt=now;
+      p=Game.addPlayer(r,crypto.randomUUID(),o.name,o.classId,o.cosmetics);p.ws=ws;p.invuln=1;p.lastInputAt=now;
       token=crypto.randomBytes(24).toString('hex');sessions.set(token,{id:p.id,code});p.token=token;
      }
      if(o.cosmetics)p.cosmetics=Game.normalizeCosmetics(o.cosmetics,p.id);
@@ -62,7 +62,8 @@ function createArenaServer(options={}){
      if(!Number.isFinite(o.x)||!Number.isFinite(o.y)||!Number.isFinite(o.a))return;
      p.lastInputAt=now;p.input={x:Game.clamp(o.x,-1,1),y:Game.clamp(o.y,-1,1),a:Math.atan2(Math.sin(o.a),Math.cos(o.a)),fire:o.fire===true};return;
     }
-    if(o.t==='skill'){if(Number.isFinite(o.a)){p.a=Math.atan2(Math.sin(o.a),Math.cos(o.a));p.input.a=p.a;}Game.skill(r,p,o.index);return;}
+    if(o.t==='skill'){if(Number.isFinite(o.a)){p.a=Math.atan2(Math.sin(o.a),Math.cos(o.a));p.input.a=p.a;}Game.skill(r,p,o.index,{x:o.x,y:o.y});return;}
+    if(o.t==='classChange'){Game.queueClass(r,p,o.classId);return;}
     if(o.t==='leave'){disconnect(ws);ws.close(1000,'Left room');}
     // No client damage, position, buff, kill or score reports are accepted.
    }catch(err){console.error('Packet processing failed:',err.message);ws.close(1011,'Protocol error');}
@@ -81,7 +82,7 @@ function createArenaServer(options={}){
     Game.step(r,.025);
     if(r.events.length){broadcast(r,{t:'events',events:r.events.splice(0,200)});r.events.length=0;}
    }
-   if(publish>=.05){publish=0;for(const r of rooms.values())if([...r.players.values()].some(p=>p.connected))broadcast(r,Game.snapshot(r),true);}
+   if(publish>=.05){publish=0;for(const r of rooms.values())if([...r.players.values()].some(p=>p.connected))for(const p of r.players.values())if(p.connected)send(p.ws,Game.snapshot(r,p.id),true);}
   }
  },25);tick.unref();
  const heartbeat=setInterval(()=>{for(const ws of wss.clients){if(!ws.alive){ws.terminate();continue;}ws.alive=false;ws.ping();}},10000);heartbeat.unref();

@@ -16,7 +16,7 @@ test('create/join respect room mode, balance teams and reject missing rooms',asy
 });
 test('real input causes server shots, kills and synchronized team scores; forged reports are ignored',async t=>{
  const app=await fixture(t),a=await app.connect(),b=await app.connect();a.json(join('create','FIGHT'));const aw=await packet(a,o=>o.t==='welcome');b.json(join('join','FIGHT'));const bw=await packet(b,o=>o.t==='welcome');
- const r=app.rooms.get('FIGHT'),pa=r.players.get(aw.id),pb=r.players.get(bw.id);r.map={walls:[],barrels:[],hazards:[]};Object.assign(pa,{x:100,y:100,shield:0});Object.assign(pb,{x:210,y:100,shield:0});
+ const r=app.rooms.get('FIGHT'),pa=r.players.get(aw.id),pb=r.players.get(bw.id);r.map={walls:[],barrels:[],hazards:[]};Object.assign(pa,{x:100,y:100,shield:0,invuln:0});Object.assign(pb,{x:210,y:100,shield:0,invuln:0});
  b.json({t:'d',k:aw.id});b.json({t:'p',id:aw.id,x:1,y:1,hp:999,sc:999});
  const firing=setInterval(()=>a.json({t:'input',x:0,y:0,a:0,fire:true}),80);t.after(()=>clearInterval(firing));
  const dead=await packet(a,o=>o.t==='state'&&o.players.some(p=>p.id===bw.id&&p.dead),3500);clearInterval(firing);a.json({t:'input',x:0,y:0,a:0,fire:false});
@@ -34,5 +34,15 @@ test('resume token restores own player, copied id cannot impersonate and rooms r
 test('static assets and deployment health are served',async t=>{
  const app=await fixture(t),base='http://127.0.0.1:'+app.server.address().port;
  for(const file of ['/','/client.js','/game-core.js','/server-config.js'])assert.equal((await fetch(base+file)).status,200);
- assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'2.1.0');assert.equal((await fetch(base+'/server.cjs')).status,404);
+ assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'3.0.0');assert.equal((await fetch(base+'/server.cjs')).status,404);
+});
+test('invisibility is filtered per real WebSocket recipient, then firing reveals the assassin',async t=>{
+ const app=await fixture(t),a=await app.connect(),b=await app.connect();a.json(join('create','HIDDEN',{mode:'normal',classId:'assassin'}));const aw=await packet(a,o=>o.t==='welcome');b.json(join('join','HIDDEN'));await packet(b,o=>o.t==='welcome');
+ a.json({t:'skill',index:1,a:0});const hidden=await packet(b,o=>o.t==='state'&&!o.players.some(p=>p.id===aw.id));assert.ok(hidden.roster.some(p=>p.id===aw.id));assert.ok((await packet(a,o=>o.t==='state'&&o.players.some(p=>p.id===aw.id&&p.invis>0))).players.some(p=>p.id===aw.id));
+ a.json({t:'input',x:0,y:0,a:0,fire:true});await packet(b,o=>o.t==='state'&&o.players.some(p=>p.id===aw.id));a.json({t:'input',x:0,y:0,a:0,fire:false});
+});
+test('a queued class change is accepted over the network only while dead in TDM',async t=>{
+ const app=await fixture(t),a=await app.connect();a.json(join('create','SWITCH'));const aw=await packet(a,o=>o.t==='welcome'),r=app.rooms.get('SWITCH'),p=r.players.get(aw.id);
+ a.json({t:'classChange',classId:'mage'});await new Promise(r=>setTimeout(r,30));assert.equal(p.nextClass,null);p.invuln=0;require('../game-core.js').damage(r,p,1000);a.json({t:'classChange',classId:'mage'});await packet(a,o=>o.t==='state'&&o.players.some(p=>p.nextClass==='mage'));p.respawn=.01;
+ const state=await packet(a,o=>o.t==='state'&&o.players.some(p=>p.id===aw.id&&p.classId==='mage'&&!p.dead));assert.equal(state.players.find(p=>p.id===aw.id).maxHp,90);
 });
