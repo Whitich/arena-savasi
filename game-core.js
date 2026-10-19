@@ -6,7 +6,7 @@ const isTeamMode=mode=>mode==='tdm'||mode==='zoneTeam';
 const MODES={zoneTeam:{target:100,unit:'takım saniyesi',name:'Alan Hakimiyeti · Takımlı',description:'Kırmızı ve mavi · rakipsiz takım saniyede +1 puan · alan her 15 saniyede taşınır'},zone:{target:100,unit:'saniye',name:'Alan Hakimiyeti · Tekli',description:'Herkes tek · rakipsiz alanda saniyede +1 puan · alan her 15 saniyede taşınır'},normal:{target:30,unit:'öldürme',name:'Normal Arena',description:'Herkes tek · testereler, taretler ve lav kapanları'},tdm:{target:50,unit:'takım öldürmesi',name:'Takım Ölüm Maçı',description:'Kırmızı ve mavi · ortak öldürme skoru · dost ateşi kapalı'},flag:{target:100,unit:'saniye',name:'Bayrak Taşıma',description:'Herkes tek · bayrak sende kaldıkça saniyede +1 puan'}};
 const CLASSES={
  ricochet:{name:'Sekici',icon:'🔷',color:'#84cbff',hp:95,speed:255,damage:18,interval:.29,bulletSpeed:920,bulletLife:1.65,bounces:3,skills:[{name:'Kayarak Kaçış',icon:'💨',cd:5},{name:'Sekme Ustası',icon:'🔷',cd:12},{name:'Çapraz Yaylım',icon:'✳',cd:18}],description:'Hızlı mermiler 3 kez seker ve uzun yaşar. E: 4 saniye daha fazla sekme. R: beşli seken yaylım.'},
- mage:{name:'Büyücü',icon:'🔮',color:'#ca9aff',hp:90,speed:245,damage:23,interval:.28,bulletSpeed:680,skills:[{name:'Arkan Küre',icon:'☄',cd:7},{name:'Buz Mührü',icon:'❄',cd:12},{name:'Işınlanma',icon:'🌀',cd:14}],description:'Q: delip geçen arkan küre (34 hasar). E: uzun menzilli buz, 22 hasar ve 0,5 saniye sabitleme. R: fareye doğru en fazla 380 birim ışınlanma; duvar içine girmez.'},
+ mage:{name:'Büyücü',icon:'🔮',color:'#ca9aff',hp:90,speed:245,damage:23,interval:.28,bulletSpeed:680,skills:[{name:'Işınlanma',icon:'🌀',cd:14},{name:'Buz Mührü',icon:'❄',cd:12},{name:'Arkan Küre',icon:'☄',cd:7}],description:'Q: fareye doğru en fazla 380 birim ışınlanma; duvar içine girmez. E: uzun menzilli buz, 22 hasar ve 0,5 saniye sabitleme. R: delip geçen arkan küre (34 hasar).'},
  assassin:{name:'Suikastçı',icon:'🗡',color:'#f18ab9',hp:80,speed:310,damage:20,interval:.25,skills:[{name:'Gölge Atılımı',icon:'💨',cd:6},{name:'Görünmezlik',icon:'👤',cd:11},{name:'Hançer Salvosu',icon:'🗡',cd:16}],description:'E: 1 saniye görünmezlik; saldırı veya hasar alınca bozulur. Q: atılma. R: yakın mesafeli üçlü hançer.'},
  jester:{name:'Soytarı',icon:'🃏',color:'#ffcc75',hp:90,speed:275,damage:21,interval:.27,skills:[{name:'Yan Adım',icon:'💨',cd:5},{name:'İkiz Aldatmaca',icon:'🎭',cd:13},{name:'Konfeti Salvosu',icon:'🎊',cd:16}],description:'E: 2 saniye aynı görünen, yürüyen ve hafif hasarla ateş eden kopya. Q: kaçış. R: yavaşlatan üçlü salvo.'},
  assault:{name:'Akıncı',icon:'⚔',color:'#5b9cff',hp:100,speed:260,damage:25,interval:.24,skills:[{name:'Atılma',icon:'💨',cd:4},{name:'Seri Tetik',icon:'🔥',cd:11},{name:'İtici Darbe',icon:'⚡',cd:16}],description:'Q: atılma. E: 3 saniye %30 hızlı ateş. R: öne doğru koni, 38 hasar ve geri itme.'},
@@ -157,7 +157,7 @@ function blink(room,p,target){
 function grantShield(p,value,additive=false){const previous=p.shield;p.shield=additive?Math.min(120,p.shield+value):Math.max(p.shield,value);p.shieldMax=Math.max(previous>0?p.shieldMax||0:0,p.shield);}
 function skill(room,p,index,target=null){
  if(room.match.status!=='playing'||p.dead||!p.connected||!Number.isInteger(index)||index<0||index>2||p.cds[index]>0)return false;
- const c=CLASSES[p.classId];if(p.root>0&&((index===0&&p.classId!=='mage')||(p.classId==='mage'&&index===2)))return false;
+ const c=CLASSES[p.classId];if(p.root>0&&index===0)return false;
  if(p.classId==='scout'&&index===2){
   if(room.time<p.ultTap)return false;p.ultTap=room.time+.22;p.invis=0;
   if(p.ultShots<=0)p.ultShots=3;p.ultShots--;
@@ -168,7 +168,7 @@ function skill(room,p,index,target=null){
  if(p.classId==='assassin'&&index===1&&room.flag.owner===p.id)return false;
  p.cds[index]=c.skills[index].cd;
  if(p.classId==='mage'){
-  if(index===0){makeBullet(room,p,p.a,{speed:640,life:1.2,damage:34,pierce:2,kind:'arcane',color:'#ca9aff',bounces:0,scalePower:false});emit(room,{t:'cast',x:p.x,y:p.y,color:'#ca9aff'});}
+  if(index===2){makeBullet(room,p,p.a,{speed:640,life:1.2,damage:34,pierce:2,kind:'arcane',color:'#ca9aff',bounces:0,scalePower:false});emit(room,{t:'cast',x:p.x,y:p.y,color:'#ca9aff'});}
   else if(index===1){makeBullet(room,p,p.a,{speed:920,life:1.05,damage:22,root:.5,kind:'frost',color:'#83e8ff',bounces:0,scalePower:false});emit(room,{t:'cast',x:p.x,y:p.y,color:'#83e8ff'});}
   else blink(room,p,target);
  }else if(p.classId==='assassin'&&index===1){p.invis=1;emit(room,{t:'skill',id:p.id,x:p.x,y:p.y,index});}

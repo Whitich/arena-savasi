@@ -74,5 +74,5 @@ Vuruşta imleçte isabet işareti ve hedef üstünde hasar sayısı çıkar. Kal
 
 ## 3.2: Takımlı alan ve sınıf kimlikleri
 Alan Hakimiyeti tekli ve takımlı seçilir. Takımlıda rakipsiz takım saniyede 1 ortak puan alır; oyuncu sayısı puanı çoğaltmaz. Rakip girince puan durur, 100 takım saniyesinde maç biter. Dost ateşi kapalıdır; ölümde sınıf değişir.
-Büyücü Q: 34 hasarlı, en fazla üç hedefi delen arkan küre (7s). E: 22 hasar, yaklaşık 966 menzil ve 0,5s hareket sabitleyen buz (12s); duvarlarda durur, dokunulmaz hedefi sabitlemez. R ışınlanma korunur.
+Büyücü R: 34 hasarlı, en fazla üç hedefi delen arkan küre (7s). E: 22 hasar, yaklaşık 966 menzil ve 0,5s hareket sabitleyen buz (12s); duvarlarda durur, dokunulmaz hedefi sabitlemez. Q ışınlanma (14s).
 Muhafız sınıf kalkanını korur. Akıncı E: 3s boyunca %30 hızlı ateş (11s), R: 260 menzilli öne koni, 38 hasar ve 96 birim duvar kontrollü geri itme (16s). Buz, arkan küre ve Akıncı etkileri farklı görseller kullanır.

@@ -64,8 +64,8 @@ test('scout ultimate has three separately activated shots, then starts one full 
  assert.equal(G.skill(r,p,2),false);advance(r,17.1);assert.equal(p.ultShots,3);assert.equal(p.cds[2],0);
 });
 test('mage blink uses cursor target, respects max range and never ends inside solid geometry',()=>{
- const r=empty(),p=add(r,'a','mage');Object.assign(p,{x:100,y:100});G.skill(r,p,2,{x:350,y:200});assert.ok(Math.abs(p.x-350)<1);assert.ok(Math.abs(p.y-200)<1);
- p.cds[2]=0;r.map.walls=[{x:500,y:100,w:120,h:200}];const before={x:p.x,y:p.y};G.skill(r,p,2,{x:2000,y:200});assert.ok(Math.hypot(p.x-before.x,p.y-before.y)<=381);assert.equal(G.inWall(r.map.walls,p.x,p.y,16),false);
+ const r=empty(),p=add(r,'a','mage');Object.assign(p,{x:100,y:100});G.skill(r,p,0,{x:350,y:200});assert.ok(Math.abs(p.x-350)<1);assert.ok(Math.abs(p.y-200)<1);
+ p.cds[0]=0;r.map.walls=[{x:500,y:100,w:120,h:200}];const before={x:p.x,y:p.y};G.skill(r,p,0,{x:2000,y:200});assert.ok(Math.hypot(p.x-before.x,p.y-before.y)<=381);assert.equal(G.inWall(r.map.walls,p.x,p.y,16),false);
 });
 test('invisible assassins are excluded from enemy snapshots but visible to themselves; attacking breaks cloak',()=>{
  const r=empty(),p=add(r,'a','assassin'),enemy=add(r,'b');G.skill(r,p,1);assert.ok(p.invis>.9);assert.ok(!G.snapshot(r,enemy.id).players.some(x=>x.id===p.id));assert.ok(G.snapshot(r,p.id).players.some(x=>x.id===p.id));G.fire(r,p);assert.equal(p.invis,0);assert.ok(G.snapshot(r,enemy.id).players.some(x=>x.id===p.id));
@@ -117,8 +117,8 @@ test('mage frost travels long range, roots for half a second, blocks mobility an
  const safe=empty(),m=add(safe,'m','mage'),v=add(safe,'v');Object.assign(m,{x:100,y:100,a:0});Object.assign(v,{x:200,y:100,invuln:1});G.skill(safe,m,1);advance(safe,.15);assert.equal(v.root,0);assert.equal(v.hp,100);
 });
 test('arcane sphere pierces three enemies once each and stops at walls',()=>{
- const r=empty(),a=add(r,'a','mage');Object.assign(a,{x:100,y:100,a:0});const victims=['b','c','d'].map((id,i)=>{const p=add(r,id);Object.assign(p,{x:200+i*100,y:100});return p;});G.skill(r,a,0);advance(r,.6);for(const p of victims)assert.equal(p.hp,66);
- a.cds[0]=0;r.map.walls=[{x:150,y:50,w:30,h:100}];G.skill(r,a,0);advance(r,.6);for(const p of victims)assert.equal(p.hp,66);
+ const r=empty(),a=add(r,'a','mage');Object.assign(a,{x:100,y:100,a:0});const victims=['b','c','d'].map((id,i)=>{const p=add(r,id);Object.assign(p,{x:200+i*100,y:100});return p;});G.skill(r,a,2);advance(r,.6);for(const p of victims)assert.equal(p.hp,66);
+ a.cds[2]=0;r.map.walls=[{x:150,y:50,w:30,h:100}];G.skill(r,a,2);advance(r,.6);for(const p of victims)assert.equal(p.hp,66);
 });
 test('guardian alone grants class shields; assault has timed rapid fire and directional knockback',()=>{
  for(const id of ['mage','assault','guardian']){const r=empty(),p=add(r,'a',id);G.skill(r,p,1);assert.equal(p.shield,id==='guardian'?95:0);}
