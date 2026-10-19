@@ -1,10 +1,10 @@
 {
   "name": "arena-savasi-server",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "start": "node server.cjs",
-    "test": "node --test test/server.test.cjs test/client.test.cjs"
+    "test": "node --test test/game.test.cjs test/server.test.cjs test/client.test.cjs"
   },
   "engines": {
     "node": ">=22"
