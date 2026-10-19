@@ -71,3 +71,8 @@ Her modun ayrı varsayılan bitiş hedefi vardır: Normal Arena 30 bireysel öld
 Hedefe ulaşınca sunucu mücadeleyi durdurur. Zafer ekranında kazanan oyuncu/takım, maç süresi, son puanlar, öldürme/ölüm değerleri ve ilgili öne çıkan oyuncular gösterilir. Bağlı herkes "Rövanşa hazırım" dediğinde aynı odada yeni tur başlar; sonuç ekranı en az üç saniye açık kalır. Skorlar, can, yetenek beklemeleri, bufflar, mermiler, TNT ve hedefler sıfırlanır; oyuncu kimliği, görünümü ve sınıfı korunur. Harita aynı kalır. Tek oyuncu diğerleri hazır olmadan maçı sıfırlayamaz. Ayrılan oyuncuların hazır oyu beklenmez.
 
 Vuruşta imleçte isabet işareti ve hedef üstünde hasar sayısı çıkar. Kalkan hasarı mavi, normal can hasarı beyaz, öldürme işareti altın renktedir. Kalkan kırılmasında parçacıklar ve ayrı bir ses, öldürmede kısa bir bildirim ve belirgin ses çalar. Can %25 veya altına indiğinde ekran kenarlarında ve can çubuğunda kritik can uyarısı görünür. Kalkanın emdiği hasar normal can kaybı gibi kırmızı parlatılmaz. M ile sesler kapatılabilir.
+
+## 3.2: Takımlı alan ve sınıf kimlikleri
+Alan Hakimiyeti tekli ve takımlı seçilir. Takımlıda rakipsiz takım saniyede 1 ortak puan alır; oyuncu sayısı puanı çoğaltmaz. Rakip girince puan durur, 100 takım saniyesinde maç biter. Dost ateşi kapalıdır; ölümde sınıf değişir.
+Büyücü Q: 34 hasarlı, en fazla üç hedefi delen arkan küre (7s). E: 22 hasar, yaklaşık 966 menzil ve 0,5s hareket sabitleyen buz (12s); duvarlarda durur, dokunulmaz hedefi sabitlemez. R ışınlanma korunur.
+Muhafız sınıf kalkanını korur. Akıncı E: 3s boyunca %30 hızlı ateş (11s), R: 260 menzilli öne koni, 38 hasar ve 96 birim duvar kontrollü geri itme (16s). Buz, arkan küre ve Akıncı etkileri farklı görseller kullanır.
