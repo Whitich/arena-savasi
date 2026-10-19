@@ -76,3 +76,6 @@ Vuruşta imleçte isabet işareti ve hedef üstünde hasar sayısı çıkar. Kal
 Alan Hakimiyeti tekli ve takımlı seçilir. Takımlıda rakipsiz takım saniyede 1 ortak puan alır; oyuncu sayısı puanı çoğaltmaz. Rakip girince puan durur, 100 takım saniyesinde maç biter. Dost ateşi kapalıdır; ölümde sınıf değişir.
 Büyücü R: 34 hasarlı, en fazla üç hedefi delen arkan küre (7s). E: 22 hasar, yaklaşık 966 menzil ve 0,5s hareket sabitleyen buz (12s); duvarlarda durur, dokunulmaz hedefi sabitlemez. Q ışınlanma (14s).
 Muhafız sınıf kalkanını korur. Akıncı E: 3s boyunca %30 hızlı ateş (11s), R: 260 menzilli öne koni, 38 hasar ve 96 birim duvar kontrollü geri itme (16s). Buz, arkan küre ve Akıncı etkileri farklı görseller kullanır.
+
+## 3.3: Görsel yenileme
+Aura (yörünge/rün/nabız), üç hareket izi ve iki vizör lobi önizlemesiyle seçilir, tarayıcıda saklanır ve sunucu tarafından doğrulanıp tüm oyunculara gönderilir. Rastgele görünüm düğmesi vardır. Tam/Hafif efekt seçimi yalnızca yerel çizimi etkiler. Zemin tek sefer çizilip önbelleğe alınır; parçacık sayısı Tam modda 360, Hafif modda 120 ile sınırlıdır. Neon palet, gölgeli duvarlar ve TNT, mermi izleri, doğuş ve ışınlanma efektleri yenilendi. Oyun kuralları, fizik, hasar ve bekleme süreleri aynı kalır.
