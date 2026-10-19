@@ -61,3 +61,7 @@ Node.js 22+ ile `npm ci`, ardından `npm start`. Yerel adres: http://localhost:8
 `game-core.js` ortak simülasyonu içerir. Sunucu 40 Hz hesaplama ve 20 Hz durum yayını yapar. İstemci kendi hareketini tahmin eder, diğer oyuncuları ara değerlerle çizer. Hasar, mermi, skor, sınıf yetenekleri, buff alma, harita tehlikeleri ve yeniden doğuş sunucu tarafından hesaplanır; istemciden gelen konum, can, öldürme veya puan bildirimleri kabul edilmez. Bu, tek başına kapsamlı bot veya DDoS koruması anlamına gelmez.
 
 Render/GitHub yönetim anahtarları istemci dosyalarında bulunmaz. Yeniden bağlanma belirteci yalnızca oyuncunun kısa süreli oda oturumuna aittir; yönetim erişimi sağlamaz.
+
+## Karakter görünümü · 2.1
+
+Lobide 10 renk, 4 gövde deseni ve 4 aksesuar arasından seçim yapılabilir. Canlı önizleme vardır. Tercihler tarayıcıda saklanır ve sunucu üzerinden diğer oyunculara gönderilir. Yeni oyuncuların varsayılan rengi rastgele seçilir. Takım modunda kişisel gövde rengi korunur; dış halka ve alt yazı takım rengini gösterir. Görünüm sınıf istatistiklerini veya çarpışma boyutunu değiştirmez.

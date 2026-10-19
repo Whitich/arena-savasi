@@ -2,7 +2,7 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
 const Game=require('./game-core.js');
-const VERSION='2.0.0';
+const VERSION='2.1.0';
 function createArenaServer(options={}){
  const rooms=new Map(),sessions=new Map();
  const server=http.createServer((req,res)=>{
@@ -50,9 +50,10 @@ function createArenaServer(options={}){
      if(!p){
       const active=[...r.players.values()].filter(p=>p.connected).length;if(active>=16)return error(ws,'Oda dolu (16 oyuncu).');
       if(!Game.CLASSES[o.classId])return error(ws,'Bir sınıf seç.');
-      p=Game.addPlayer(r,crypto.randomUUID(),o.name,o.classId);p.ws=ws;p.shield=1;p.lastInputAt=now;
+      p=Game.addPlayer(r,crypto.randomUUID(),o.name,o.classId,o.cosmetics);p.ws=ws;p.shield=1;p.lastInputAt=now;
       token=crypto.randomBytes(24).toString('hex');sessions.set(token,{id:p.id,code});p.token=token;
      }
+     if(o.cosmetics)p.cosmetics=Game.normalizeCosmetics(o.cosmetics,p.id);
      ws.room=r;ws.player=p;r.emptyAt=0;clearTimeout(ws.joinTimer);welcome(ws,r,p,token);broadcast(r,{t:'joined',id:p.id,name:p.name});return;
     }
     const r=ws.room,p=ws.player;if(!r||!p)return;

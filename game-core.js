@@ -10,6 +10,12 @@ const CLASSES={
  bomber:{name:'Bombacı',icon:'💣',color:'#ffad68',hp:105,speed:245,damage:27,interval:.28,skills:[{name:'Kaçış Atılması',icon:'💨',cd:5},{name:'Kara Mayını',icon:'💥',cd:10},{name:'Bomba Salvosu',icon:'🚀',cd:17}],description:'Alan kontrolü. Kaçış, düşmana tetiklenen mayın ve üç bombalık salvo.'}
 };
 const BUFFS={speed:{name:'Hız',icon:'⚡',color:'#4dd7e6',duration:8},double:{name:'Çift Namlu',icon:'🔫',color:'#ffd166',duration:9},power:{name:'Güçlü Mermi',icon:'💥',color:'#ff7a6b',duration:9},heal:{name:'Can Paketi',icon:'♥',color:'#65dc99',duration:0},shield:{name:'Kalkan',icon:'🛡',color:'#b9a1ff',duration:2},range:{name:'Uzun Menzil',icon:'🎯',color:'#ffc857',duration:14,legendary:true},rapid:{name:'Hızlı Tarama',icon:'⚡',color:'#ffc857',duration:10,legendary:true},launcher:{name:'Bomba Fırlatıcı',icon:'🚀',color:'#ffc857',duration:12,legendary:true},vampire:{name:'Can Çalma',icon:'🩸',color:'#ffc857',duration:10,legendary:true}};
+const COSMETICS={colors:{azure:{name:'Mavi',hex:'#5b9cff'},coral:{name:'Mercan',hex:'#ff718a'},mint:{name:'Nane',hex:'#55dfbc'},gold:{name:'Altın',hex:'#ffd166'},violet:{name:'Mor',hex:'#bb91ff'},orange:{name:'Turuncu',hex:'#ff9f58'},pink:{name:'Pembe',hex:'#f57ed5'},ice:{name:'Buz',hex:'#83e5ef'},lime:{name:'Limon',hex:'#bded63'},silver:{name:'Gümüş',hex:'#d2ddea'}},patterns:{plain:'Düz',stripe:'Çizgili',cross:'Artı',star:'Yıldız'},hats:{none:'Yok',crown:'Taç',horns:'Boynuz',antenna:'Anten'}};
+function normalizeCosmetics(value={},seed=''){
+ value=value&&typeof value==='object'?value:{};
+ const colors=Object.keys(COSMETICS.colors);
+ return{color:Object.hasOwn(COSMETICS.colors,value.color)?value.color:colors[hash(seed)%colors.length],pattern:Object.hasOwn(COSMETICS.patterns,value.pattern)?value.pattern:'plain',hat:Object.hasOwn(COSMETICS.hats,value.hat)?value.hat:'none'};
+}
 const DEFAULT_BINDINGS={up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',fire:'Space',skill1:'KeyQ',skill2:'KeyE',skill3:'KeyR',mute:'KeyM'};
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h);}
 function rng(seed){return()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -52,10 +58,10 @@ function createRoom(code,mode='normal',seed=code){
  if(!MODES[mode])throw Error('Invalid mode');
  return{code,mode,seed,map:generateMap(seed,mode),random:rng(hash(seed+'buff')),players:new Map(),bullets:[],mines:[],buffs:[],events:[],time:0,bulletSeq:0,buffSeq:0,nextBuff:2,teamScores:[0,0],flag:{owner:null,x:800,y:500,clock:0},emptyAt:0};
 }
-function addPlayer(room,id,name,classId='assault'){
+function addPlayer(room,id,name,classId='assault',cosmetics={}){
  const team=room.mode==='tdm'?([0,1].map(t=>[...room.players.values()].filter(p=>p.connected&&p.team===t).length).reduce((best,n,i,a)=>n<a[best]?i:best,0)):null;
  const c=CLASSES[classId]||CLASSES.assault;
- const p={id,name:String(name||'Oyuncu').slice(0,14),classId:CLASSES[classId]?classId:'assault',team,...safePosition(room,team),a:0,hp:c.hp,maxHp:c.hp,score:0,kills:0,deaths:0,dead:false,respawn:0,connected:true,input:{x:0,y:0,a:0,fire:false},cds:[0,0,0],shotCd:0,shield:0,dash:0,dashA:0,haste:0,slow:0,buffs:{},noHit:0,vx:0,vy:0};
+ const p={id,cosmetics:normalizeCosmetics(cosmetics,id),name:String(name||'Oyuncu').slice(0,14),classId:CLASSES[classId]?classId:'assault',team,...safePosition(room,team),a:0,hp:c.hp,maxHp:c.hp,score:0,kills:0,deaths:0,dead:false,respawn:0,connected:true,input:{x:0,y:0,a:0,fire:false},cds:[0,0,0],shotCd:0,shield:0,dash:0,dashA:0,haste:0,slow:0,buffs:{},noHit:0,vx:0,vy:0};
  room.players.set(id,p);return p;
 }
 function emit(room,event){room.events.push(event);}
@@ -177,10 +183,10 @@ function step(room,dt){
 const round=n=>Math.round(n*10)/10;
 function snapshot(room){
  return{t:'state',time:round(room.time),mode:room.mode,teamScores:room.teamScores,flag:room.mode==='flag'?room.flag:null,
- players:[...room.players.values()].map(p=>({id:p.id,name:p.name,classId:p.classId,team:p.team,x:round(p.x),y:round(p.y),a:Math.round(p.a*1000)/1000,vx:round(p.vx),vy:round(p.vy),hp:round(p.hp),maxHp:p.maxHp,score:p.score,kills:p.kills,deaths:p.deaths,dead:p.dead,respawn:round(p.respawn),connected:p.connected,cds:p.cds.map(round),shield:round(p.shield),dash:round(p.dash),haste:round(p.haste),slow:round(p.slow),buffs:Object.fromEntries(Object.entries(p.buffs).map(([k,v])=>[k,round(v)]))})),
+ players:[...room.players.values()].map(p=>({id:p.id,name:p.name,cosmetics:p.cosmetics,classId:p.classId,team:p.team,x:round(p.x),y:round(p.y),a:Math.round(p.a*1000)/1000,vx:round(p.vx),vy:round(p.vy),hp:round(p.hp),maxHp:p.maxHp,score:p.score,kills:p.kills,deaths:p.deaths,dead:p.dead,respawn:round(p.respawn),connected:p.connected,cds:p.cds.map(round),shield:round(p.shield),dash:round(p.dash),haste:round(p.haste),slow:round(p.slow),buffs:Object.fromEntries(Object.entries(p.buffs).map(([k,v])=>[k,round(v)]))})),
  bullets:room.bullets.map(b=>({id:b.id,owner:b.owner,x:round(b.x),y:round(b.y),vx:round(b.vx),vy:round(b.vy),bomb:b.bomb,color:b.color})),
  barrels:room.map.barrels.map(b=>({id:b.id,hp:b.hp,respawn:round(b.respawn)})),buffs:room.buffs,mines:room.mines,
  hazards:room.map.hazards.map(h=>({id:h.id,type:h.type,x:round(h.x),y:round(h.y),angle:Math.round((h.angle||0)*1000)/1000,active:h.active||false}))};
 }
-return{W,H,RAD,CLASSES,MODES,BUFFS,DEFAULT_BINDINGS,clamp,hash,rng,resolve,inWall,generateMap,safePosition,createRoom,addPlayer,enemy,damage,kill,blast,fire,skill,step,snapshot,dropFlag};
+return{W,H,RAD,COSMETICS,normalizeCosmetics,CLASSES,MODES,BUFFS,DEFAULT_BINDINGS,clamp,hash,rng,resolve,inWall,generateMap,safePosition,createRoom,addPlayer,enemy,damage,kill,blast,fire,skill,step,snapshot,dropFlag};
 });
