@@ -215,7 +215,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 let dpr=1, vw=0, vh=0;
 function resize(){
-  dpr = window.devicePixelRatio||1;
+  dpr = Math.min(window.devicePixelRatio||1, 2);
   vw = window.innerWidth; vh = window.innerHeight;
   cv.width = vw*dpr; cv.height = vh*dpr;
   cv.style.width = vw+'px'; cv.style.height = vh+'px';
@@ -409,16 +409,31 @@ function p2pUp(){
   if(isHost){ for(const e of peerConns.values()) if(e.dc && e.dc.readyState==='open') return true; return false; }
   return !!(hostConn && hostConn.dc && hostConn.dc.readyState==='open');
 }
+function sendDC(entry, o, serialized){
+  const channel = o.t==='p' ? entry.state : entry.dc;
+  if(!channel || channel.readyState!=='open') return false;
+  // Never queue obsolete positions behind congestion.
+  if(o.t==='p' && channel.bufferedAmount > 8192) return true;
+  try { channel.send(serialized); return true; } catch(err){ return false; }
+}
+function needsMqtt(exclude){
+  for(const id of others.keys()){
+    if(id===exclude) continue;
+    const entry=peerConns.get(id);
+    if(!entry || !entry.dc || entry.dc.readyState!=='open') return true;
+  }
+  return false;
+}
 function send(o){
   o.n = ++seq;
   const s = JSON.stringify(o);
   if(isHost){
     for(const [pid,e] of peerConns){
-      if(e.dc && e.dc.readyState==='open'){ try{ e.dc.send(s); }catch(err){} }
+      sendDC(e, o, s);
     }
-    sendMqtt(o, s);
+    if(o.t==='hi' || o.t==='yo' || o.t==='bye' || needsMqtt()) sendMqtt(o, s);
   } else if(preferDcNow() && hostConn && hostConn.dc && hostConn.dc.readyState==='open'){
-    try { hostConn.dc.send(s); } catch(err){ sendMqtt(o, s); }
+    if(!sendDC(hostConn, o, s)) sendMqtt(o, s);
   } else {
     sendMqtt(o, s);
   }
@@ -474,7 +489,7 @@ function connectHost(){
   if(now-lastTry < 6000) return;
   lastTry = now;
   const pc = new RTCPeerConnection({iceServers:iceList()});
-  const entry = {pc, dc:null, born:now};
+  const entry = {pc, dc:null, state:null, born:now};
   hostConn = entry;
   pc.onicecandidate = e => { if(e.candidate) sendSig({t:'ice', id:me.id, to:hostId, cand:e.candidate}); };
   pc.onconnectionstatechange = () => {
@@ -485,6 +500,9 @@ function connectHost(){
       }
     }
   };
+  const state = pc.createDataChannel('state', {ordered:false, maxRetransmits:0});
+  entry.state = state;
+  state.onmessage = e => { try{ handle(JSON.parse(e.data), 'dc'); }catch(err){} };
   const dc = pc.createDataChannel('d', {ordered:true});
   entry.dc = dc;
   dc.onopen = () => { setStatus(true); addFeed('⚡ Doğrudan P2P bağlantı kuruldu', true); };
@@ -499,14 +517,20 @@ function answerPeer(o){
   const old = peerConns.get(o.id);
   if(old){ try{ old.pc.close(); }catch(err){} peerConns.delete(o.id); }
   const pc = new RTCPeerConnection({iceServers:ICE_STUN.concat(ICE_TURN)});
-  const entry = {pc, dc:null, born:performance.now()};
+  const entry = {pc, dc:null, state:null, born:performance.now()};
   peerConns.set(o.id, entry);
   pc.onicecandidate = e => { if(e.candidate) sendSig({t:'ice', id:me.id, to:o.id, cand:e.candidate}); };
   pc.onconnectionstatechange = () => {
     if(pc.connectionState==='failed'||pc.connectionState==='closed'){ peerConns.delete(o.id); setStatus(); }
   };
   pc.ondatachannel = e => {
+    if(e.channel.label==='state'){
+      entry.state=e.channel;
+      e.channel.onmessage = ev => { try{ handle(JSON.parse(ev.data), 'dc'); }catch(err){} };
+      return;
+    }
     entry.dc = e.channel;
+    e.channel.onopen = () => setStatus();
     e.channel.onmessage = ev => { try{ handle(JSON.parse(ev.data), 'dc'); }catch(err){} };
     e.channel.onclose = () => { peerConns.delete(o.id); setStatus(); };
     setStatus();
@@ -590,8 +614,8 @@ function tryBroker(){
 }
 function connect(){
   const ch = room.toLowerCase();
-  mtopic = 'arena-v2/' + ch;
-  try { bc = new BroadcastChannel('arena-'+ch); bc.onmessage = e => handle(e.data, 'bc'); } catch(e){ bc=null; }
+  mtopic = 'arena-v3/' + ch;
+  try { bc = new BroadcastChannel('arena-v3-'+ch); bc.onmessage = e => handle(e.data, 'bc'); } catch(e){ bc=null; }
   brokerIdx = hash(room) % BROKERS.length;
   setStatus(false);
   tryBroker();
@@ -631,12 +655,9 @@ function handle(o, via){
   if(!markNew(o.id, o.n)) return;
   if(isHost){
     const s = JSON.stringify(o);
-    if(via !== 'mq'){
-      sendMqtt(o, s);
-      via = 'dc';
-    }
+    if(via !== 'mq' && needsMqtt(o.id)) sendMqtt(o, s);
     for(const [pid,e] of peerConns){
-      if(pid !== o.id && e.dc && e.dc.readyState==='open'){ try{ e.dc.send(s); }catch(err){} }
+      if(pid !== o.id) sendDC(e, o, s);
     }
   }
   if(o.t==='hi'){
@@ -757,17 +778,12 @@ function avgOf(a){
   return s[Math.floor(s.length/2)];
 }
 function preferDcNow(){
-  if(!p2pUp()) return false;
-  const d=avgOf(pingsD), m=avgOf(pingsM);
-  if(d&&m) return d<=m;
-  if(m) return false;
-  if(d) return d<=200;
-  return true;
+  return p2pUp();
 }
 function avgPing(){
   const d=avgOf(pingsD), m=avgOf(pingsM);
-  const raw = (d&&m) ? (preferDcNow()?d:m) : (d||m||120);
-  return clamp(raw, 30, 600);
+  const raw = preferDcNow() ? (d||120) : (m||120);
+  return raw;
 }
 
 function addFeed(text, hi){
@@ -995,7 +1011,7 @@ function loop(t){
   }
 
   const now = performance.now();
-  const idelay = clamp(120 + (p2pUp()?0:avgPing()*0.55), 130, 400);
+  const idelay = preferDcNow() ? 70 : 110;
   for(const p of others.values()){
     const h = p.hist, t = now - idelay;
     if(h.length){
@@ -1027,7 +1043,7 @@ function loop(t){
 
   acc += dt;
   const pd = preferDcNow();
-  const praw = pd ? 0.04 : (others.size>=3 ? 0.2 : 0.14);
+  const praw = pd ? 0.04 : 0.08;
   if(acc >= praw){
     acc = 0;
     if(!me.dead) send({t:'p', id:me.id, name:me.name, x:Math.round(me.x), y:Math.round(me.y),
@@ -1291,19 +1307,22 @@ function updateHUD(){
   if(me.buff.speed>0) acts.push(['⚡', me.buff.speed, BUFF_COL.speed]);
   if(me.buff.double>0) acts.push(['🔫', me.buff.double, BUFF_COL.double]);
   if(me.buff.power>0) acts.push(['💣', me.buff.power, BUFF_COL.power]);
-  $('buffrow').innerHTML = acts.map(a=>
+  const buffHTML = acts.map(a=>
     '<div class="buffchip" style="border-color:'+a[2]+'">'+a[0]+' '+Math.ceil(a[1])+'s</div>').join('');
+
+  if($('buffrow')._html !== buffHTML){ $('buffrow').innerHTML = buffHTML; $('buffrow')._html = buffHTML; }
 
   const list = [{name:me.name, score:me.score, me:true, color:colorOf(me.id)}];
   for(const p of others.values()) list.push({name:p.name, score:p.score, me:false, color:p.color});
   list.sort((a,b)=>b.score-a.score);
   const tbl = $('score').querySelector('table');
-  tbl.innerHTML = list.slice(0,9).map((p,i)=>
+  const scoreHTML = list.slice(0,9).map((p,i)=>
     '<tr class="'+(p.me?'me ':'')+(i===0?'lead':'')+'">'+
     '<td class="dot"><i style="color:'+p.color+';background:'+p.color+'"></i></td>'+
     '<td class="n">'+(i+1)+'. '+esc(p.name)+'</td>'+
     '<td class="p">'+p.score+'</td></tr>'
   ).join('');
+  if(tbl._html !== scoreHTML){ tbl.innerHTML = scoreHTML; tbl._html = scoreHTML; }
   $('count').textContent = 'Oyuncu: '+list.length;
 }
 function updSkill(id, cd, total){
