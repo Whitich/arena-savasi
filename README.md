@@ -1,4 +1,4 @@
-# Arena Savaşı · 3.0
+# Arena Savaşı · 3.1
 
 Arkadaşlarla tarayıcıdan oynanan arena. Oyuncular dosya indirmez, hesap açmaz.
 
@@ -63,3 +63,11 @@ Kod `main` dalına gönderilir. Bu kurulumda otomatik tetikleme doğrulanamadı�
 `npm test`: sınıflar, sekme geometrisi ve ömrü, kalkan kırılması/taşan hasar, üç şarjlı ulti, ışınlanma sınırları, görünmezlik için alıcıya göre veri süzme, kopya davranışı, buff birleşimleri, ölümde sınıf seçimi, alan puanı/çekişme/taşınma ve gerçek WebSocket akışları.
 
 Sunucu 40 Hz simülasyon, 20 Hz durum yayını yapar. Konum, hasar, mermi, skor, sınıf, buff ve hedefler sunucu tarafından hesaplanır. İstemci bildirimleriyle can/puan/öldürme verilemez. Bu kapsamlı bot veya DDoS koruması anlamına gelmez. Yönetim anahtarları istemciye konmaz; yeniden bağlanma belirteci yalnızca oyuncunun kısa süreli oda oturumuna aittir.
+
+## Maç hedefleri ve vuruş hissi · 3.1
+
+Her modun ayrı varsayılan bitiş hedefi vardır: Normal Arena 30 bireysel öldürme, Takım Ölüm Maçı 50 takım öldürmesi, Bayrak Taşıma 100 biriktirilmiş taşıma saniyesi, Alan Hakimiyeti 100 biriktirilmiş alan puanı. Genel bir 5 dakika zorunluluğu yoktur. Hedefler lobide ve oyun içi skor panelinde görünür.
+
+Hedefe ulaşınca sunucu mücadeleyi durdurur. Zafer ekranında kazanan oyuncu/takım, maç süresi, son puanlar, öldürme/ölüm değerleri ve ilgili öne çıkan oyuncular gösterilir. Bağlı herkes "Rövanşa hazırım" dediğinde aynı odada yeni tur başlar; sonuç ekranı en az üç saniye açık kalır. Skorlar, can, yetenek beklemeleri, bufflar, mermiler, TNT ve hedefler sıfırlanır; oyuncu kimliği, görünümü ve sınıfı korunur. Harita aynı kalır. Tek oyuncu diğerleri hazır olmadan maçı sıfırlayamaz. Ayrılan oyuncuların hazır oyu beklenmez.
+
+Vuruşta imleçte isabet işareti ve hedef üstünde hasar sayısı çıkar. Kalkan hasarı mavi, normal can hasarı beyaz, öldürme işareti altın renktedir. Kalkan kırılmasında parçacıklar ve ayrı bir ses, öldürmede kısa bir bildirim ve belirgin ses çalar. Can %25 veya altına indiğinde ekran kenarlarında ve can çubuğunda kritik can uyarısı görünür. Kalkanın emdiği hasar normal can kaybı gibi kırmızı parlatılmaz. M ile sesler kapatılabilir.

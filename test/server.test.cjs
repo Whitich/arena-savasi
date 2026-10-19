@@ -34,7 +34,7 @@ test('resume token restores own player, copied id cannot impersonate and rooms r
 test('static assets and deployment health are served',async t=>{
  const app=await fixture(t),base='http://127.0.0.1:'+app.server.address().port;
  for(const file of ['/','/client.js','/game-core.js','/server-config.js'])assert.equal((await fetch(base+file)).status,200);
- assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'3.0.0');assert.equal((await fetch(base+'/server.cjs')).status,404);
+ assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'3.1.0');assert.equal((await fetch(base+'/server.cjs')).status,404);
 });
 test('invisibility is filtered per real WebSocket recipient, then firing reveals the assassin',async t=>{
  const app=await fixture(t),a=await app.connect(),b=await app.connect();a.json(join('create','HIDDEN',{mode:'normal',classId:'assassin'}));const aw=await packet(a,o=>o.t==='welcome');b.json(join('join','HIDDEN'));await packet(b,o=>o.t==='welcome');
@@ -45,4 +45,10 @@ test('a queued class change is accepted over the network only while dead in TDM'
  const app=await fixture(t),a=await app.connect();a.json(join('create','SWITCH'));const aw=await packet(a,o=>o.t==='welcome'),r=app.rooms.get('SWITCH'),p=r.players.get(aw.id);
  a.json({t:'classChange',classId:'mage'});await new Promise(r=>setTimeout(r,30));assert.equal(p.nextClass,null);p.invuln=0;require('../game-core.js').damage(r,p,1000);a.json({t:'classChange',classId:'mage'});await packet(a,o=>o.t==='state'&&o.players.some(p=>p.nextClass==='mage'));p.respawn=.01;
  const state=await packet(a,o=>o.t==='state'&&o.players.some(p=>p.id===aw.id&&p.classId==='mage'&&!p.dead));assert.equal(state.players.find(p=>p.id===aw.id).maxHp,90);
+});
+test('match winner and consent-based rematch are synchronized through WebSocket',async t=>{
+ const app=await fixture(t),a=await app.connect(),b=await app.connect();a.json(join('create','ROUND',{mode:'normal'}));const aw=await packet(a,o=>o.t==='welcome');b.json(join('join','ROUND'));const bw=await packet(b,o=>o.t==='welcome');const r=app.rooms.get('ROUND'),pa=r.players.get(aw.id),pb=r.players.get(bw.id);pa.score=29;pb.invuln=0;require('../game-core.js').damage(r,pb,1000,pa.id);
+ for(const ws of [a,b]){const end=await packet(ws,o=>o.t==='state'&&o.match.status==='finished');assert.equal(end.match.winner.id,aw.id);assert.equal(end.match.target,30);}
+ a.json({t:'rematch'});await packet(a,o=>o.t==='state'&&o.match.readyCount===1);require('../game-core.js').step(r,3.1);assert.equal(r.match.status,'finished');b.json({t:'rematch'});
+ for(const ws of [a,b]){const next=await packet(ws,o=>o.t==='state'&&o.match.round===2);assert.equal(next.match.status,'playing');assert.ok(next.players.every(p=>p.score===0));}
 });

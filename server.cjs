@@ -2,7 +2,7 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
 const Game=require('./game-core.js');
-const VERSION='3.0.0';
+const VERSION='3.1.0';
 function createArenaServer(options={}){
  const rooms=new Map(),sessions=new Map();
  const server=http.createServer((req,res)=>{
@@ -63,6 +63,7 @@ function createArenaServer(options={}){
      p.lastInputAt=now;p.input={x:Game.clamp(o.x,-1,1),y:Game.clamp(o.y,-1,1),a:Math.atan2(Math.sin(o.a),Math.cos(o.a)),fire:o.fire===true};return;
     }
     if(o.t==='skill'){if(Number.isFinite(o.a)){p.a=Math.atan2(Math.sin(o.a),Math.cos(o.a));p.input.a=p.a;}Game.skill(r,p,o.index,{x:o.x,y:o.y});return;}
+    if(o.t==='rematch'){Game.voteRematch(r,p);return;}
     if(o.t==='classChange'){Game.queueClass(r,p,o.classId);return;}
     if(o.t==='leave'){disconnect(ws);ws.close(1000,'Left room');}
     // No client damage, position, buff, kill or score reports are accepted.

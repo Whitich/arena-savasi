@@ -2,7 +2,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),vm=requir
 const G=require('../game-core.js'),source=fs.readFileSync(path.join(__dirname,'../client.js'),'utf8');
 function controls(){
  const events={},messages=[],hint={textContent:''};
- const context={window:{addEventListener:(n,fn)=>events[n]=fn},bindingAction:null,bindings:{...G.DEFAULT_BINDINGS},BIND_LABELS:{skill1:'skill1',up:'up'},playing:true,keys:new Set(),firing:true,aim:0,muted:false,store:{set(){}},cursorTarget:()=>({x:700,y:500}),renderBindings(){},renderLobby(){},initAudio(){},addFeed(){},send:o=>messages.push(o),$:id=>id==='settings'?{open:false}:hint};
+ const context={window:{addEventListener:(n,fn)=>events[n]=fn},bindingAction:null,bindings:{...G.DEFAULT_BINDINGS},BIND_LABELS:{skill1:'skill1',up:'up'},playing:true,world:null,keys:new Set(),firing:true,aim:0,muted:false,store:{set(){}},cursorTarget:()=>({x:700,y:500}),renderBindings(){},renderLobby(){},initAudio(){},addFeed(){},send:o=>messages.push(o),$:id=>id==='settings'?{open:false}:hint};
  vm.createContext(context);vm.runInContext(source.slice(source.indexOf("window.addEventListener('keydown'"),source.indexOf("window.addEventListener('keyup'")),context);
  return{context,events,messages,hint};
 }

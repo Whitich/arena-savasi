@@ -86,3 +86,20 @@ test('class changes are queued only during a TDM death and applied at respawn wi
 test('zone awards survival time only to an uncontested player, preserves score and moves after 15s',()=>{
  const r=empty('zone'),p=add(r,'a'),opponent=add(r,'b');Object.assign(p,{x:800,y:500});Object.assign(opponent,{x:100,y:100});advance(r,2.1);assert.equal(p.score,2);Object.assign(opponent,{x:810,y:500});advance(r,2);assert.equal(p.score,2);assert.equal(r.zone.contested,true);Object.assign(opponent,{x:100,y:100});advance(r,1.1);assert.equal(p.score,3);const old={x:r.zone.x,y:r.zone.y};advance(r,10);assert.ok(Math.hypot(r.zone.x-old.x,r.zone.y-old.y)>290);assert.equal(r.zone.nextAt,30);assert.ok(p.score>=3);
 });
+test('each mode has its own default target and individual match ends exactly at 30 kills',()=>{
+ assert.equal(G.MODES.normal.target,30);assert.equal(G.MODES.tdm.target,50);assert.equal(G.MODES.flag.target,100);assert.equal(G.MODES.zone.target,100);
+ const r=empty(),a=add(r,'a'),b=add(r,'b');a.score=29;G.damage(r,b,1000,a.id);assert.equal(a.score,30);assert.equal(r.match.status,'finished');assert.equal(r.match.winner.id,a.id);const hp=a.hp;G.damage(r,a,500,b.id);assert.equal(a.hp,hp);assert.equal(G.fire(r,a),false);assert.equal(G.skill(r,a,0),false);const time=r.time;advance(r,1);assert.equal(r.time,time);
+});
+test('TDM ends at 50 team kills, not 50 individual kills, and all recipients get the same winner',()=>{
+ const r=empty('tdm'),a=add(r,'a'),b=add(r,'b');r.teamScores[0]=49;G.damage(r,b,1000,a.id);assert.equal(a.score,1);assert.equal(r.match.status,'finished');assert.equal(r.match.winner.team,0);assert.deepEqual(G.snapshot(r,a.id).match.winner,G.snapshot(r,b.id).match.winner);
+});
+test('flag and zone end at 100 accumulated seconds and preserve final results',()=>{
+ for(const mode of ['flag','zone']){const r=empty(mode),p=add(r);p.x=800;p.y=500;p.score=99;advance(r,1.1);assert.equal(p.score,100);assert.equal(r.match.status,'finished');assert.equal(r.match.results[0].score,100);assert.equal(r.match.winner.id,p.id);}
+});
+test('rematch requires each connected player, respects minimum results display, resets game state and preserves identity',()=>{
+ const r=empty(),a=add(r,'a'),b=add(r,'b');a.score=29;G.damage(r,b,1000,a.id);a.buffs.launcher=10;a.shield=30;assert.equal(G.voteRematch(r,a),true);assert.equal(G.voteRematch(r,a),true);advance(r,3.2);assert.equal(r.match.status,'finished');assert.equal(G.snapshot(r,a.id).match.readyCount,1);G.voteRematch(r,b);advance(r,.025);assert.equal(r.match.status,'playing');assert.equal(r.match.round,2);assert.equal(a.score,0);assert.equal(b.dead,false);assert.equal(a.hp,a.maxHp);assert.deepEqual(a.buffs,{});assert.equal(a.shield,0);assert.equal(a.id,'a');assert.equal(G.voteRematch(r,a),false);
+});
+test('shield breaking emits exactly once and winning projectile does not crash remaining bullet processing',()=>{
+ const r=empty(),a=add(r,'a'),b=add(r,'b');b.shield=10;G.damage(r,b,20,a.id);G.damage(r,b,5,a.id);assert.equal(r.events.filter(e=>e.t==='shieldBreak').length,1);
+ Object.assign(a,{x:100,y:100,a:0,score:29});Object.assign(b,{x:160,y:100,hp:1});a.buffs.double=10;G.fire(r,a);assert.doesNotThrow(()=>advance(r,.2));assert.equal(r.match.status,'finished');assert.equal(r.match.winner.id,a.id);
+});

@@ -2,7 +2,7 @@
 'use strict';
 const W=1600,H=1000,RAD=16;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const MODES={zone:{name:'Alan Hakimiyeti',description:'Herkes tek · rakipsiz alanda saniyede +1 puan · alan her 15 saniyede taşınır'},normal:{name:'Normal Arena',description:'Herkes tek · testereler, taretler ve lav kapanları'},tdm:{name:'Takım Ölüm Maçı',description:'Kırmızı ve mavi · ortak öldürme skoru · dost ateşi kapalı'},flag:{name:'Bayrak Taşıma',description:'Herkes tek · bayrak sende kaldıkça saniyede +1 puan'}};
+const MODES={zone:{target:100,unit:'saniye',name:'Alan Hakimiyeti',description:'Herkes tek · rakipsiz alanda saniyede +1 puan · alan her 15 saniyede taşınır'},normal:{target:30,unit:'öldürme',name:'Normal Arena',description:'Herkes tek · testereler, taretler ve lav kapanları'},tdm:{target:50,unit:'takım öldürmesi',name:'Takım Ölüm Maçı',description:'Kırmızı ve mavi · ortak öldürme skoru · dost ateşi kapalı'},flag:{target:100,unit:'saniye',name:'Bayrak Taşıma',description:'Herkes tek · bayrak sende kaldıkça saniyede +1 puan'}};
 const CLASSES={
  ricochet:{name:'Sekici',icon:'🔷',color:'#84cbff',hp:95,speed:255,damage:18,interval:.29,bulletSpeed:920,bulletLife:1.65,bounces:3,skills:[{name:'Kayarak Kaçış',icon:'💨',cd:5},{name:'Sekme Ustası',icon:'🔷',cd:12},{name:'Çapraz Yaylım',icon:'✳',cd:18}],description:'Hızlı mermiler 3 kez seker ve uzun yaşar. E: 4 saniye daha fazla sekme. R: beşli seken yaylım.'},
  mage:{name:'Büyücü',icon:'🔮',color:'#ca9aff',hp:90,speed:245,damage:23,interval:.28,bulletSpeed:680,skills:[{name:'Büyü Dalgası',icon:'✨',cd:7},{name:'40 Can Bariyer',icon:'🛡',cd:12},{name:'Işınlanma',icon:'🌀',cd:14}],description:'Q: yakın alan hasarı. E: 40 canlık bariyer. R: fareye doğru en fazla 380 birim ışınlanma; duvar içine girmez.'},
@@ -60,7 +60,30 @@ function safePosition(room,team=null){
 }
 function createRoom(code,mode='normal',seed=code){
  if(!MODES[mode])throw Error('Invalid mode');
- return{code,mode,seed,map:generateMap(seed,mode),random:rng(hash(seed+'buff')),players:new Map(),decoys:[],zone:{x:800,y:500,r:140,nextAt:15,clock:0,holder:null,contested:false},bullets:[],mines:[],buffs:[],events:[],time:0,bulletSeq:0,buffSeq:0,nextBuff:2,teamScores:[0,0],flag:{owner:null,x:800,y:500,clock:0},emptyAt:0};
+ return{code,mode,seed,match:{round:1,status:'playing',target:MODES[mode].target,winner:null,results:[],ready:new Set(),intermission:0,finishedAt:0},map:generateMap(seed,mode),random:rng(hash(seed+'buff')),players:new Map(),decoys:[],zone:{x:800,y:500,r:140,nextAt:15,clock:0,holder:null,contested:false},bullets:[],mines:[],buffs:[],events:[],time:0,bulletSeq:0,buffSeq:0,nextBuff:2,teamScores:[0,0],flag:{owner:null,x:800,y:500,clock:0},emptyAt:0};
+}
+function checkMatch(room){
+ const m=room.match;if(m.status!=='playing')return;
+ let winner=null;
+ if(room.mode==='tdm'){const team=room.teamScores.findIndex(score=>score>=m.target);if(team>=0)winner={kind:'team',team,name:team===0?'Kırmızı takım':'Mavi takım',score:room.teamScores[team]};}
+ else{const p=[...room.players.values()].find(p=>p.score>=m.target);if(p)winner={kind:'player',id:p.id,name:p.name,score:p.score};}
+ if(!winner)return;
+ m.status='finished';m.winner=winner;m.finishedAt=room.time;m.intermission=0;
+ m.results=[...room.players.values()].map(p=>({id:p.id,name:p.name,team:p.team,score:p.score,kills:p.kills,deaths:p.deaths})).sort((a,b)=>b.score-a.score||b.kills-a.kills);
+ room.bullets=[];room.mines=[];room.decoys=[];for(const p of room.players.values())p.input={x:0,y:0,a:p.a,fire:false};
+ emit(room,{t:'matchEnd',winner,round:m.round});
+}
+function voteRematch(room,p){if(room.match.status!=='finished'||!p.connected)return false;room.match.ready.add(p.id);return true;}
+function restartMatch(room){
+ const round=room.match.round+1;
+ room.map=generateMap(room.seed,room.mode);room.time=0;room.bullets=[];room.mines=[];room.decoys=[];room.buffs=[];room.events=[];room.nextBuff=2;room.teamScores=[0,0];room.flag={owner:null,x:800,y:500,clock:0};room.zone={x:800,y:500,r:140,nextAt:15,clock:0,holder:null,contested:false};
+ room.match={round,status:'playing',target:MODES[room.mode].target,winner:null,results:[],ready:new Set(),intermission:0,finishedAt:0};
+ for(const p of room.players.values())p.dead=true;
+ for(const p of room.players.values()){
+  if(p.nextClass)p.classId=p.nextClass;
+  Object.assign(p,{...safePosition(room,p.team),maxHp:CLASSES[p.classId].hp,hp:CLASSES[p.classId].hp,score:0,kills:0,deaths:0,dead:false,respawn:0,cds:[0,0,0],shotCd:0,shield:0,shieldMax:0,invuln:1,invis:0,ricochetBoost:0,ultShots:3,ultTap:0,nextClass:null,dash:0,haste:0,slow:0,buffs:{},noHit:0,vx:0,vy:0,input:{x:0,y:0,a:p.a,fire:false}});
+ }
+ emit(room,{t:'matchStart',round});
 }
 function addPlayer(room,id,name,classId='assault',cosmetics={}){
  const team=room.mode==='tdm'?([0,1].map(t=>[...room.players.values()].filter(p=>p.connected&&p.team===t).length).reduce((best,n,i,a)=>n<a[best]?i:best,0)):null;
@@ -72,16 +95,17 @@ function emit(room,event){room.events.push(event);}
 function enemy(room,a,b){return !a||room.mode!=='tdm'||a.team!==b.team;}
 function dropFlag(room,p,killer){if(room.mode!=='flag'||room.flag.owner!==p.id)return;room.flag.owner=killer&&!killer.dead&&killer.connected?killer.id:null;room.flag.x=p.x;room.flag.y=p.y;room.flag.clock=0;emit(room,{t:'flag',owner:room.flag.owner});}
 function kill(room,p,killer){
- if(p.dead)return;p.dead=true;p.hp=0;p.respawn=room.mode==='tdm'?5:3;p.deaths++;p.input.fire=false;p.shield=0;p.shieldMax=0;p.invis=0;p.ricochetBoost=0;p.invuln=0;if(p.classId==='scout'&&p.ultShots<3)p.cds[2]=Math.max(p.cds[2],17);p.dash=0;p.haste=0;p.buffs={};
+ if(p.dead||room.match.status!=='playing')return;p.dead=true;p.hp=0;p.respawn=room.mode==='tdm'?5:3;p.deaths++;p.input.fire=false;p.shield=0;p.shieldMax=0;p.invis=0;p.ricochetBoost=0;p.invuln=0;if(p.classId==='scout'&&p.ultShots<3)p.cds[2]=Math.max(p.cds[2],17);p.dash=0;p.haste=0;p.buffs={};
  if(killer&&killer!==p&&enemy(room,killer,p)){killer.kills++;if(room.mode!=='flag'&&room.mode!=='zone')killer.score++;if(room.mode==='tdm')room.teamScores[killer.team]++;}
  else killer=null;
- dropFlag(room,p,killer);emit(room,{t:'death',id:p.id,killer:killer?.id||null,x:p.x,y:p.y});
+ dropFlag(room,p,killer);emit(room,{t:'death',id:p.id,killer:killer?.id||null,x:p.x,y:p.y});checkMatch(room);
 }
 function damage(room,p,amount,owner=null){
- if(p.dead||!p.connected||p.invuln>0)return 0;
+ if(room.match.status!=='playing'||p.dead||!p.connected||p.invuln>0)return 0;
  const killer=room.players.get(owner);if(killer&&(!enemy(room,killer,p)||killer===p))return 0;
- p.invis=0;p.noHit=0;const absorbed=Math.min(p.shield,amount);p.shield-=absorbed;amount-=absorbed;
+ p.invis=0;p.noHit=0;const previousShield=p.shield;const absorbed=Math.min(p.shield,amount);p.shield-=absorbed;amount-=absorbed;
  const dealt=Math.min(p.hp,amount);p.hp=Math.max(0,p.hp-amount);emit(room,{t:'hit',id:p.id,owner,x:p.x,y:p.y,amount:Math.round(dealt),absorbed:Math.round(absorbed)});
+ if(previousShield>0&&p.shield===0)emit(room,{t:'shieldBreak',id:p.id,owner,x:p.x,y:p.y});
  if(killer?.buffs.vampire>0&&!killer.dead)killer.hp=Math.min(killer.maxHp,killer.hp+dealt*.2);
  if(p.hp<=0)kill(room,p,killer);return dealt;
 }
@@ -91,7 +115,7 @@ function hurtDecoy(room,d,amount,owner){
  if(d.hp<=0){d.life=0;emit(room,{t:'vanish',x:d.x,y:d.y});}
 }
 function queueClass(room,p,classId){
- if(room.mode!=='tdm'||!p.dead||!Object.hasOwn(CLASSES,classId))return false;
+ if(room.match.status!=='playing'||room.mode!=='tdm'||!p.dead||!Object.hasOwn(CLASSES,classId))return false;
  p.nextClass=classId;return true;
 }
 function blast(room,x,y,r,amount,owner=null,color='#ffad68'){
@@ -113,7 +137,7 @@ function makeBullet(room,p,angle,options={}){
  room.bullets.push(b);return b;
 }
 function fire(room,p){
- if(p.dead||!p.connected||p.shotCd>0)return false;
+ if(room.match.status!=='playing'||p.dead||!p.connected||p.shotCd>0)return false;
  p.invis=0;const c=CLASSES[p.classId],bomb=p.buffs.launcher>0,dual=p.buffs.double>0;
  p.shotCd=(bomb?.68:c.interval)*(p.buffs.rapid>0?.58:1)*(dual?1.08:1);
  const opts=bomb?{bomb:true,speed:470*(p.ricochetBoost>0?1.15:1),life:1.1,damage:dual?39:58,r:dual?78:95}:{damage:c.damage*(dual?.76:1)};
@@ -131,7 +155,7 @@ function blink(room,p,target){
 }
 function grantShield(p,value,additive=false){const previous=p.shield;p.shield=additive?Math.min(120,p.shield+value):Math.max(p.shield,value);p.shieldMax=Math.max(previous>0?p.shieldMax||0:0,p.shield);}
 function skill(room,p,index,target=null){
- if(p.dead||!p.connected||!Number.isInteger(index)||index<0||index>2||p.cds[index]>0)return false;
+ if(room.match.status!=='playing'||p.dead||!p.connected||!Number.isInteger(index)||index<0||index>2||p.cds[index]>0)return false;
  const c=CLASSES[p.classId];
  if(p.classId==='scout'&&index===2){
   if(room.time<p.ultTap)return false;p.ultTap=room.time+.22;p.invis=0;
@@ -193,6 +217,12 @@ function moveZone(room){
  old.nextAt+=15;old.clock=0;old.holder=null;old.contested=false;emit(room,{t:'zone',x:old.x,y:old.y});
 }
 function step(room,dt){
+ if(room.match.status==='finished'){
+  room.match.intermission+=dt;
+  const active=[...room.players.values()].filter(p=>p.connected);
+  if(room.match.intermission>=3&&active.length&&active.every(p=>room.match.ready.has(p.id)))restartMatch(room);
+  return;
+ }
  room.time+=dt;
  for(const p of room.players.values()){
   if(!p.connected)continue;
@@ -218,6 +248,7 @@ function step(room,dt){
  }
  if(room.mode==='normal')updateHazards(room,dt);
  for(let i=room.bullets.length-1;i>=0;i--){
+  if(room.match.status!=='playing')break;
   const b=room.bullets[i];let removed=false;const substeps=Math.max(1,Math.ceil(Math.hypot(b.vx,b.vy)*dt/10));
   for(let j=0;j<substeps&&!removed;j++){
    const oldX=b.x,oldY=b.y;b.x+=b.vx*dt/substeps;b.y+=b.vy*dt/substeps;b.life-=dt/substeps;
@@ -245,13 +276,13 @@ function step(room,dt){
   const inside=[...room.players.values()].filter(p=>p.connected&&!p.dead&&distance(p,z)<=z.r-RAD);
   z.contested=inside.length>1;const holder=inside.length===1?inside[0]:null;
   if(z.holder!==holder?.id){z.clock=0;z.holder=holder?.id||null;}
-  if(holder){z.clock+=dt;while(z.clock>=1){holder.score++;z.clock-=1;}}
+  if(holder){z.clock+=dt;while(z.clock>=1){holder.score++;z.clock-=1;checkMatch(room);if(room.match.status==='finished')break;}}
  }
  if(room.mode==='flag'){
   const flag=room.flag;let owner=room.players.get(flag.owner);
   if(owner&&(!owner.connected||owner.dead)){dropFlag(room,owner,null);owner=null;}
   if(!flag.owner){const candidate=[...room.players.values()].find(p=>p.connected&&!p.dead&&distance(p,flag)<32);if(candidate){flag.owner=candidate.id;flag.clock=0;owner=candidate;emit(room,{t:'flag',owner:candidate.id});}}
-  if(owner){flag.x=owner.x;flag.y=owner.y;flag.clock+=dt;while(flag.clock>=1){owner.score++;flag.clock-=1;}}
+  if(owner){flag.x=owner.x;flag.y=owner.y;flag.clock+=dt;while(flag.clock>=1){owner.score++;flag.clock-=1;checkMatch(room);if(room.match.status==='finished')break;}}
  }
 }
 const round=n=>Math.round(n*10)/10;
@@ -260,11 +291,12 @@ function snapshot(room,viewerId=null){
  const serialize=p=>({id:p.id,name:p.name,cosmetics:p.cosmetics,classId:p.classId,team:p.team,x:round(p.x),y:round(p.y),a:Math.round(p.a*1000)/1000,vx:round(p.vx||0),vy:round(p.vy||0),hp:round(p.hp),maxHp:p.maxHp,score:p.score,kills:p.kills,deaths:p.deaths,dead:!!p.dead,respawn:round(p.respawn||0),connected:p.connected!==false,cds:(p.cds||[0,0,0]).map(round),shield:round(p.shield||0),shieldMax:p.shieldMax||0,invuln:round(p.invuln||0),invis:p.id===viewerId||!enemy(room,viewer,p)?round(p.invis||0):0,ultShots:p.ultShots??3,nextClass:p.nextClass||null,ricochetBoost:round(p.ricochetBoost||0),dash:round(p.dash||0),haste:round(p.haste||0),slow:round(p.slow||0),buffs:Object.fromEntries(Object.entries(p.buffs||{}).map(([k,v])=>[k,round(v)]))});
  const visible=[...room.players.values()].filter(p=>p.invis<=0||p.id===viewerId||!enemy(room,viewer,p)||room.flag.owner===p.id).map(serialize);
  for(const d of room.decoys)if(d.life>0){const copy=serialize(d);if(viewerId===d.owner||!enemy(room,viewer,d))copy.allyDecoy=true;visible.push(copy);}
- return{t:'state',time:Math.round(room.time*100)/100,mode:room.mode,teamScores:room.teamScores,flag:room.mode==='flag'?room.flag:null,zone:room.mode==='zone'?room.zone:null,
+ const active=[...room.players.values()].filter(p=>p.connected);
+ return{t:'state',match:{round:room.match.round,status:room.match.status,target:room.match.target,winner:room.match.winner,results:room.match.results,finishedAt:round(room.match.finishedAt),ready:room.match.ready.has(viewerId),readyCount:active.filter(p=>room.match.ready.has(p.id)).length,required:active.length},time:Math.round(room.time*100)/100,mode:room.mode,teamScores:room.teamScores,flag:room.mode==='flag'?room.flag:null,zone:room.mode==='zone'?room.zone:null,
  roster:[...room.players.values()].map(p=>({id:p.id,name:p.name,cosmetics:p.cosmetics,classId:p.classId,team:p.team,score:p.score,kills:p.kills,connected:p.connected})),players:visible,
  bullets:room.bullets.map(b=>({id:b.id,owner:b.owner,x:round(b.x),y:round(b.y),vx:round(b.vx),vy:round(b.vy),bomb:b.bomb,color:b.color})),
  barrels:room.map.barrels.map(b=>({id:b.id,hp:b.hp,respawn:round(b.respawn)})),buffs:room.buffs,mines:room.mines,
  hazards:room.map.hazards.map(h=>({id:h.id,type:h.type,x:round(h.x),y:round(h.y),angle:Math.round((h.angle||0)*1000)/1000,active:h.active||false}))};
 }
-return{W,H,RAD,COSMETICS,normalizeCosmetics,CLASSES,MODES,BUFFS,DEFAULT_BINDINGS,clamp,hash,rng,resolve,inWall,generateMap,safePosition,createRoom,addPlayer,queueClass,enemy,damage,kill,blast,fire,skill,step,snapshot,dropFlag};
+return{W,H,RAD,COSMETICS,normalizeCosmetics,CLASSES,MODES,BUFFS,DEFAULT_BINDINGS,clamp,hash,rng,resolve,inWall,generateMap,safePosition,createRoom,addPlayer,checkMatch,voteRematch,restartMatch,queueClass,enemy,damage,kill,blast,fire,skill,step,snapshot,dropFlag};
 });
