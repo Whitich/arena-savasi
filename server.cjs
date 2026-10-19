@@ -7,7 +7,7 @@ function createArenaServer(){
   const rooms=new Map();
   const server=http.createServer((req,res)=>{
     const pathname=new URL(req.url,'http://localhost').pathname;
-    if(pathname==='/health'){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true,rooms:rooms.size}));return;}
+    if(pathname==='/health'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({ok:true,rooms:rooms.size,version:process.env.RENDER_GIT_COMMIT||'local'}));return;}
     const files={'/':'oyun.html','/oyun.html':'oyun.html','/index.html':'index.html','/server-config.js':'server-config.js'};
     const file=files[pathname];
     if(!file){res.writeHead(404);res.end();return;}

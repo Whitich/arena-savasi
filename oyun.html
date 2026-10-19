@@ -141,6 +141,15 @@
     font-size:11.5px; color:#7d8bab; background:rgba(10,14,26,.65); padding:5px 14px;
     border-radius:20px; border:1px solid #1d2740; white-space:nowrap;
   }
+  #top { flex-wrap:wrap; max-width:calc(100% - 290px); }
+  #hint { top:66px; }
+  #share { width:auto; margin:0; padding:6px 12px; font-size:12px;
+    letter-spacing:0; pointer-events:auto; border-radius:20px; box-shadow:none; }
+  @media(max-width:900px){
+    #top { max-width:calc(100% - 28px); }
+    #score { top:110px; min-width:160px; max-width:190px; }
+    #hint { display:none; }
+  }
 </style>
 </head>
 <body>
@@ -171,6 +180,7 @@
     <div class="pill" id="status">Bağlanıyor…</div>
     <div class="pill" id="count">Oyuncu: 1</div>
     <div class="pill" id="roompill"></div>
+    <button id="share" type="button">Oda linkini kopyala</button>
     <div class="pill" id="ping">Ping: –</div>
   </div>
   <div id="score"><h3>🏆 Skor Tablosu</h3><table></table></div>
@@ -920,9 +930,10 @@ function castShock(){
 const keys = {};
 let mouse = {x:innerWidth/2, y:innerHeight/2}, firing=false, mouseMoved=false;
 window.addEventListener('keydown', e => {
+  if(!running || e.target.closest('input,button,textarea,select')) return;
   keys[e.code]=true;
   if(e.code==='Space'||e.code==='Tab') e.preventDefault();
-  if(!running) return;
+  if(e.repeat) return;
   if(e.code==='KeyQ') castDash();
   if(e.code==='KeyE') castShield();
   if(e.code==='KeyR') castShock();
@@ -933,6 +944,21 @@ window.addEventListener('mousemove', e => { mouse.x=e.clientX; mouse.y=e.clientY
 window.addEventListener('mousedown', e => { if(e.button===0) firing=true; });
 window.addEventListener('mouseup', e => { if(e.button===0) firing=false; });
 window.addEventListener('contextmenu', e => e.preventDefault());
+function resetInputs(){
+  for(const code of Object.keys(keys)) keys[code]=false;
+  firing=false;
+}
+window.addEventListener('blur',resetInputs);
+$('share').onclick=async()=>{
+  resetInputs();
+  const link='https://arena-savasi.onrender.com/#'+encodeURIComponent(room);
+  try{
+    await navigator.clipboard.writeText(link);
+    addFeed('Oda linki kopyalandı · arkadaşlarına gönder',true);
+  }catch{
+    addFeed('Oda linki: '+link,true);
+  }
+};
 
 let running=false, last=0, acc=0, pingAcc=2, lastFrameAt=0;
 
@@ -1430,6 +1456,8 @@ function updSkill(id, cd, total){
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 function start(){
+  if(running) return;
+  resetInputs(); lastFrameAt=performance.now();
   let n = $('name').value.trim() || 'Oyuncu';
   let r = $('room').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8) || 'ARENA';
   me.name = n.slice(0,14); room = r;
@@ -1458,7 +1486,9 @@ try {
 
 window.addEventListener('beforeunload', () => send({t:'bye', id:me.id}));
 document.addEventListener('visibilitychange', () => {
+  resetInputs();
   if(document.visibilityState==='visible'){
+    lastFrameAt=performance.now();
     for(const p of others.values()) p.hist.length = 0;
     pingsD.length = 0; pingsM.length = 0;
   }

@@ -26,3 +26,7 @@ Node.js 22+ ile `npm ci`, ardından `npm start`. Adres: http://localhost:8080. A
 Özel sunucuda MQTT, P2P host seçimi ve ortak TURN hizmeti kullanılmaz. Hareket saniyede 25 kez iletilir; istemci çizimi yerelde yapar. Kuyruk dolduğunda eski konumlar atlanır; skor ve ölüm olayları güvenilir bağlantıdan gider. Ping doğrudan oyun sunucusuna ölçülür, FPS ayrıca gösterilir. Skorun tek kaynağı sunucudur; konum paketleri skorun üzerine yazamaz. Kopuşta yerel oyun durur ve bağlantı tekrar denenir.
 
 Bu sürümün skor ve oda yönetimi sunucudadır; hareket, çarpışma ve hasar hesaplamaları hâlâ istemcidedir. Arkadaşlarla oyun içindir; rekabetçi hile koruması sağlayan tam sunucu simülasyonu değildir.
+
+## Güncelleme akışı
+
+Kod bu depodaki `main` dalına gönderilir. Render hizmetinde Auto-Deploy `On Commit` seçilidir; başarıyla derlenen sürüm aynı oyun adresinde yayına alınır. Başarısız derlemede önceki çalışan sürüm korunur. Oyuncuların açık sekmeleri yeni kodu almak için yenilemesi gerekir. Oyun içindeki "Oda linkini kopyala" düğmesi, aynı odayı paylaşır.

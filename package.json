@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node server.cjs",
-    "test": "node --test test/server.test.cjs"
+    "test": "node --test test/server.test.cjs test/client.test.cjs"
   },
   "engines": {
     "node": ">=22"
