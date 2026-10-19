@@ -79,3 +79,6 @@ Muhafız sınıf kalkanını korur. Akıncı E: 3s boyunca %30 hızlı ateş (11
 
 ## 3.3: Görsel yenileme
 Aura (yörünge/rün/nabız), üç hareket izi ve iki vizör lobi önizlemesiyle seçilir, tarayıcıda saklanır ve sunucu tarafından doğrulanıp tüm oyunculara gönderilir. Rastgele görünüm düğmesi vardır. Tam/Hafif efekt seçimi yalnızca yerel çizimi etkiler. Zemin tek sefer çizilip önbelleğe alınır; parçacık sayısı Tam modda 360, Hafif modda 120 ile sınırlıdır. Neon palet, gölgeli duvarlar ve TNT, mermi izleri, doğuş ve ışınlanma efektleri yenilendi. Oyun kuralları, fizik, hasar ve bekleme süreleri aynı kalır.
+
+## 3.4: Kişisel harita temaları
+Neon Tersane, Kadim Orman, Buz Üssü, Çöl Harabeleri ve Kızıl Dökümhane: beş ayrı zemin deseni ve duvar malzemesi. Lobi veya oyun içi görünüm düğmesiyle seçilir; yalnızca localStorage arena_map_theme alanına kaydedilir ve sunucuya gönderilmez. Tema değişince zemin önbelleği yenilenir. Geometri, görüş, çarpışma ve oyun durumu değişmez; tema menüsü açıkken oyuncu girdileri durdurulur, canlı maç devam eder.
