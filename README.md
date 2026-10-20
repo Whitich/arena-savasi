@@ -1,4 +1,4 @@
-# Arena Savaşı · 3.6.1
+# Arena Savaşı · 3.6.2
 
 Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme ve oyuncu hesabı gerekmez.
 
@@ -36,6 +36,8 @@ Hedef tamamlanınca kazanan ve sonuç tablosu gösterilir. Bağlı herkes **Röv
 | Sesi aç/kapat | M |
 
 **Tuş ayarları** menüsünden değiştirilebilir. Atamalar bu tarayıcıda saklanır. Sol tık ateş etmeye devam eder.
+
+Sınıf kartlarında buffsız temel mermi hasarı, mermi hızı, atış aralığı, saniyedeki atış sayısı, hareket hızı ve mermi ömrü gösterilir. Q/E/R açıklamaları hasar, süre, menzil ve bekleme bilgilerini içerir. Çoklu atış toplamı bütün mermilerin isabet etmesi içindir.
 
 ## Sekiz sınıf
 

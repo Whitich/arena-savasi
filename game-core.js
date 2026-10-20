@@ -14,6 +14,18 @@ const CLASSES={
  guardian:{name:'Muhafız',icon:'🛡',color:'#b6a0ff',hp:145,speed:215,damage:32,interval:.32,skills:[{name:'Hücum',icon:'💥',cd:6},{name:'Kale · 5 sn',icon:'🛡',cd:14},{name:'Yer Sarsıntısı',icon:'🌋',cd:18}],description:'Yüksek can, düşük hız. Hücum, 5 saniyelik 95 canlık kalkan. R: 40 yakın alan hasarı ve 2 saniye yavaşlatma.'},
  bomber:{name:'Bombacı',icon:'💣',color:'#ffad68',hp:105,speed:245,damage:27,interval:.28,skills:[{name:'Kaçış Atılması',icon:'💨',cd:5},{name:'Kara Mayını',icon:'💥',cd:10},{name:'Bomba Salvosu',icon:'🚀',cd:17}],description:'Alan kontrolü. Kaçış, düşmana tetiklenen mayın ve üç bombalık salvo.'}
 };
+// Menu descriptions use base values; buffs and enemy defenses can change the result.
+const SKILL_DETAILS={
+ assault:['Kısa atılma; hasar vermez.','3 saniye %30 daha hızlı ateş; bufflarla birleşir.','38 alan hasarı; öne doğru 260 birim koni ve en fazla 96 birim geri itme.'],
+ scout:['Uzun atılma; hasar vermez.','3 saniye %50 hızlı hareket.','Her basış 42 hasarlı bir mermi (1120 birim/sn). 3 hak; üçüncüden sonra 17 sn bekleme.'],
+ guardian:['Hücum; temas hasarı vermez.','95 kalkan canı; en fazla 5 saniye sürer.','40 alan hasarı; 165 birim yarıçap ve 2 saniye %45 yavaşlatma.'],
+ bomber:['Kısa atılma; hasar vermez.','Mayın patlaması 65 hasar, 125 birim yarıçap. 0,65 sn sonra kurulur; 22 sn yaşar, en fazla 3 mayın.','3 bomba × 38 hasar (üçü de vurursa 114); bomba başına 95 birim patlama yarıçapı.'],
+ ricochet:['Kısa kayma; hasar vermez.','4 saniye +2 sekme ve %15 mermi hızı.','5 mermi × 15 hasar (hepsi vurursa 75); 1000 birim/sn, 1,9 sn ömür, 4 sekme.'],
+ mage:['Fareye doğru en fazla 380 birim ışınlanma; hasar vermez, duvar içine girmez.','22 hasar ve 0,5 saniye hareket sabitleme. Mermi hızı 920 birim/sn, ömrü 1,05 sn.','Hedef başına 34 hasar; en fazla 3 hedefi deler. Mermi hızı 640 birim/sn, ömrü 1,2 sn.'],
+ assassin:['Kısa atılma; hasar vermez.','1 saniye görünmezlik. Saldırınca veya hasar alınca bozulur; bayrak taşırken kullanılamaz.','3 hançer × 17 hasar (hepsi vurursa 51); 1050 birim/sn ve 0,4 sn ömür.'],
+ jester:['Kısa yan adım; hasar vermez.','2 saniyelik kopya; atış başına 8 hasar, yaklaşık 0,33 sn atış aralığı.','3 mermi × 18 hasar (hepsi vurursa 54) ve 1 saniye %45 yavaşlatma.']
+};
+for(const [id,c]of Object.entries(CLASSES))c.skills.forEach((skill,i)=>skill.detail=SKILL_DETAILS[id][i]);
 const RARITIES={common:{name:'Sıradan',color:'#a8b2c1',weight:28},uncommon:{name:'Gelişmiş',color:'#69d990',weight:30},rare:{name:'Nadir',color:'#69adff',weight:23},epic:{name:'Destansı',color:'#bd87ff',weight:13},legendary:{name:'Legendary',color:'#ffd166',weight:6}};
 const BUFFS={
  smallheal:{name:'İlk Yardım',icon:'✚',rarity:'common',duration:0,description:'Anında +15 can.'},
