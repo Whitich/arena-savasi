@@ -2,7 +2,7 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
 const Game=require('./game-core.js');
-const VERSION='3.5.0';
+const VERSION='3.5.1';
 function createArenaServer(options={}){
  const rooms=new Map(),sessions=new Map();
  const server=http.createServer((req,res)=>{

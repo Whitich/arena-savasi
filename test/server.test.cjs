@@ -34,7 +34,7 @@ test('resume token restores own player, copied id cannot impersonate and rooms r
 test('static assets and deployment health are served',async t=>{
  const app=await fixture(t),base='http://127.0.0.1:'+app.server.address().port;
  for(const file of ['/','/client.js','/game-core.js','/server-config.js'])assert.equal((await fetch(base+file)).status,200);
- assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'3.5.0');assert.equal((await fetch(base+'/server.cjs')).status,404);
+ assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'3.5.1');assert.equal((await fetch(base+'/server.cjs')).status,404);
 });
 test('invisibility is filtered per real WebSocket recipient, then firing reveals the assassin',async t=>{
  const app=await fixture(t),a=await app.connect(),b=await app.connect();a.json(join('create','HIDDEN',{mode:'normal',classId:'assassin'}));const aw=await packet(a,o=>o.t==='welcome');b.json(join('join','HIDDEN'));await packet(b,o=>o.t==='welcome');

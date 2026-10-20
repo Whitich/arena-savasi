@@ -52,8 +52,8 @@ test('cosmetics validate all choices, reject injected values and survive snapsho
  const r=empty('tdm'),p=G.addPlayer(r,'a','Alice','guardian',look);const other=G.addPlayer(r,'b','Bob','guardian',{color:'mint',pattern:'stripe',hat:'antenna'});
  const state=G.snapshot(r);assert.equal(state.players[0].cosmetics.color,'coral');assert.equal(state.players[1].cosmetics.color,'mint');assert.equal(p.maxHp,145);assert.notEqual(p.team,other.team);
 });
-test('shields absorb damage, break under repeated fire, overflow into HP and never decay with time',()=>{
- const r=empty(),p=add(r,'a','guardian');G.skill(r,p,1);assert.equal(p.shield,95);advance(r,2);assert.equal(p.shield,95);G.damage(r,p,25);assert.equal(p.hp,145);assert.equal(p.shield,70);G.damage(r,p,25);assert.equal(p.shield,45);G.damage(r,p,65);assert.equal(p.shield,0);assert.equal(p.hp,125);
+test('shields absorb damage, break under repeated fire, overflow into HP and expire after five seconds',()=>{
+ const r=empty(),p=add(r,'a','guardian');G.skill(r,p,1);assert.equal(p.shield,95);advance(r,2);assert.equal(p.shield,95);G.damage(r,p,25);assert.equal(p.hp,145);assert.equal(p.shield,70);G.damage(r,p,25);assert.equal(p.shield,45);G.damage(r,p,65);assert.equal(p.shield,0);assert.equal(p.hp,125);assert.equal(p.shieldTime,0);p.cds[1]=0;G.skill(r,p,1);advance(r,4.9);assert.equal(p.shield,95);advance(r,.1);assert.equal(p.shield,0);assert.equal(p.shieldTime,0);assert.ok(r.events.some(e=>e.t==='shieldExpire'));
 });
 test('ricochet bullets reflect off map walls and arena boundaries while lifetime remains bounded',()=>{
  const r=empty(),p=add(r,'a','ricochet');Object.assign(p,{x:100,y:100,a:0});r.map.walls=[{x:200,y:50,w:40,h:100}];G.fire(r,p);const b=r.bullets[0];assert.equal(b.bounces,3);assert.ok(b.life>1.5);assert.ok(b.vx>900);advance(r,.12);assert.ok(b.vx<0);assert.equal(b.bounces,2);assert.ok(b.x<200);advance(r,.2);assert.ok(b.vx>0);advance(r,3.1);assert.equal(r.bullets.length,0);
@@ -130,7 +130,7 @@ test('all 22 buffs carry one of five shared rarity colors and every pickup is us
  for(const [kind,b]of Object.entries(G.BUFFS)){assert.equal(b.color,G.RARITIES[b.rarity].color);const r=empty(),p=add(r);p.hp=40;p.cds=[5,7,9];take(r,p,kind);assert.equal(r.buffs.length,0);assert.ok(r.events.some(e=>e.t==='pickup'&&e.kind===kind));if(b.duration)assert.equal(p.buffs[kind],b.duration);assert.ok(p.hp<=p.maxHp);assert.ok(p.shield<=120);}
 });
 test('health, energy and titan pickups cap resources and repeated timed pickup refreshes rather than stacks',()=>{
- const r=empty(),p=add(r);p.hp=90;take(r,p,'smallheal');assert.equal(p.hp,100);p.cds=[5,1,0];take(r,p,'cooldown');assert.ok(Math.abs(p.cds[0]-2.975)<.001);assert.equal(p.cds[1],0);p.shield=110;take(r,p,'titan');assert.equal(p.shield,120);advance(r,2);take(r,p,'titan');assert.equal(p.buffs.titan,10);assert.equal(p.shield,120);
+ const r=empty(),p=add(r);p.hp=90;take(r,p,'smallheal');assert.equal(p.hp,100);p.cds=[5,1,0];take(r,p,'cooldown');assert.ok(Math.abs(p.cds[0]-2.975)<.001);assert.equal(p.cds[1],0);p.shield=110;p.shieldTime=5;take(r,p,'titan');assert.equal(p.shield,120);advance(r,2);take(r,p,'titan');assert.equal(p.buffs.titan,10);assert.equal(p.shield,120);
 });
 test('armor and titan use strongest reduction, execution respects friendly fire and lifesteal uses actual HP loss',()=>{
  const r=empty('tdm'),a=add(r,'a'),b=add(r,'b'),ally=add(r,'c');b.buffs.armor=9;G.damage(r,b,20,a.id);assert.equal(b.hp,84);b.buffs.titan=10;G.damage(r,b,20,a.id);assert.equal(b.hp,70);
@@ -149,4 +149,8 @@ test('magnet collects at 90 units but does not pull through solid walls',()=>{
 test('spawn cadence is moderately faster, respects cap, valid positions and all rarity pools',()=>{
  const r=empty();r.nextBuff=2;advance(r,1.9);assert.equal(r.buffSeq,0);advance(r,.2);assert.equal(r.buffSeq,1);advance(r,6.5);assert.equal(r.buffSeq,2);const seen=new Set();let max=0;
  for(let i=0;i<16000;i++){G.step(r,.5);max=Math.max(max,r.buffs.length);for(const b of r.buffs){seen.add(b.kind);assert.ok(G.BUFFS[b.kind]);assert.ok(b.x>=120&&b.x<=1480);}}assert.equal(seen.size,22);assert.ok(max<=4);assert.ok(max>=3);
+});
+
+test('shield and titan pickups refresh five-second shield independently of titan armor duration',()=>{
+ for(const kind of ['shield','titan']){const r=empty(),p=add(r);take(r,p,kind);assert.equal(p.shieldTime,5);advance(r,4);assert.equal(p.shield,35);take(r,p,kind);assert.equal(p.shield,70);assert.equal(G.snapshot(r,p.id).players[0].shieldTime,5);advance(r,5);assert.equal(p.shield,0);assert.equal(p.shieldMax,0);if(kind==='titan')assert.ok(p.buffs.titan>4.9);}
 });

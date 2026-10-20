@@ -110,6 +110,7 @@ function effects(events){
    }
    burst(e.x,e.y,e.amount>0?'#ff94aa':'#78e7ef',4);
   }else if(e.t==='shieldBreak'){sound('shieldBreak',e.x,e.y);burst(e.x,e.y,'#78e7ef',24);rings.push({x:e.x,y:e.y,r:60,t:0,max:.32,color:'#78e7ef'});if(e.id===myId)shieldFlash=.65;}
+  else if(e.t==='shieldExpire'){rings.push({x:e.x,y:e.y,r:32,t:0,max:.3,color:'#78e7ef'});}
   else if(e.t==='matchEnd'){resetInputs();if(e.winner?.id===myId||e.winner?.kind==='team'&&e.winner.team===localPlayer()?.team)sound('victory');}
   else if(e.t==='matchStart'){addFeed('Rövanş başladı!',true);}
   else if(e.t==='explosion'){rings.push({x:e.x,y:e.y,r:e.r,t:0,max:.45,color:e.color||'#ffad68'});burst(e.x,e.y,e.color||'#ffad68',20);sound('boom',e.x,e.y);if(renderPos&&Math.hypot(e.x-renderPos.x,e.y-renderPos.y)<400)shake=6;}
@@ -362,7 +363,7 @@ function updateHUD(){
  $('matchGoal').textContent='Hedef: '+(world.match?.target||MODES[roomMode].target)+' '+MODES[roomMode].unit;
  $('count').textContent='Oyuncu: '+(world.roster||[...players.values()]).filter(p=>p.connected).length;$('roompill').textContent='Oda: '+roomCode;
  $('ping').textContent=`Ping: ${ping===null?'–':Math.round(ping)+' ms'} · ${Math.round(1000/Math.max(1,frameMs))} FPS`;
- $('hpbar').style.width=clamp(me.hp/me.maxHp*100,0,100)+'%';$('hptext').textContent=Math.ceil(me.hp)+' / '+me.maxHp+(me.shield>0?' · 🛡 '+Math.ceil(me.shield):'');$('shieldbar').style.width=clamp(me.shield/(me.shieldMax||120)*100,0,100)+'%';$('shieldwrap').classList.toggle('hidden',me.shield<=0);
+ $('hpbar').style.width=clamp(me.hp/me.maxHp*100,0,100)+'%';$('hptext').textContent=Math.ceil(me.hp)+' / '+me.maxHp+(me.shield>0?' · 🛡 '+Math.ceil(me.shield)+' · '+(me.shieldTime||0).toFixed(1)+'sn':'');$('shieldbar').style.width=clamp(me.shield/(me.shieldMax||120)*100,0,100)+'%';$('shieldwrap').classList.toggle('hidden',me.shield<=0);
  $('classPill').textContent=CLASSES[me.classId].name+(me.invis>0?' · GİZLİ':me.ricochetBoost>0?' · Sekme Ustası '+Math.ceil(me.ricochetBoost)+'s':'')+(G.isTeamMode(roomMode)?' · '+(me.team===0?'Kırmızı takım':'Mavi takım'):'');
  const active=Object.entries(me.buffs).filter(([k,t])=>t>0&&k!=='shield').map(([k,t])=>`<span class="buff-chip ${BUFFS[k].legendary?'legendary':''}" title="${RARITIES[BUFFS[k].rarity].name}: ${BUFFS[k].description}" style="--buff-color:${BUFFS[k].color}">${BUFFS[k].legendary?'★ ':''}${BUFFS[k].icon} ${BUFFS[k].name} ${Math.ceil(t)}s</span>`).join('');setHTML($('buffrow'),active);
  CLASSES[me.classId].skills.forEach((skill,i)=>{const el=$('sk-'+i),cd=me.cds[i];el.querySelector('.ico').textContent=skill.icon;el.querySelector('.key').textContent=keyLabel(bindings['skill'+(i+1)]);el.querySelector('.sname').textContent=skill.name;el.querySelector('.cdmask').style.height=clamp(cd/skill.cd*100,0,100)+'%';el.querySelector('.cdnum').textContent=cd>0?(cd<3?cd.toFixed(1):Math.ceil(cd)):(me.classId==='scout'&&i===2?me.ultShots+'/3':'');el.classList.toggle('ready',cd<=0);});

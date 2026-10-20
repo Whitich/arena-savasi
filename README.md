@@ -87,3 +87,6 @@ Neon Tersane, Kadim Orman, Buz Üssü, Çöl Harabeleri ve Kızıl Dökümhane: 
 Sıradan gri (%28), Gelişmiş yeşil (%30), Nadir mavi (%23), Destansı mor (%13), Legendary sarı (%6). Her kademenin içinden eşit seçim yapılır. Her buffın nadirlik halkası, 1–5 işareti ve adı vardır; lobi rehberi süreleri ve birleşimleri açıklar.
 Yeni bufflar: İlk Yardım, Enerji Parçası, İvme Mermisi, Mıknatıs, Yenilenme, Çelik Deri, Odak, Buzlu Mermi, Sekme Çekirdeği, Delici Mermi, Avcı İçgüdüsü, Yıldız Salvosu ve Titan Zırhı. Süre yenileme aynı etkiyi üst üste katlamaz; ölümde temizlenir. Hasar azaltmalarında en güçlü etki geçerlidir. Üçlü + çift namlu dörtlüye dönüşür, bomba ile birleşir; bombalar delme/yavaşlatma almaz.
 İlk çıkış 2 saniye; sonraki aralık 8 yerine 6,5 saniye, aynı anda en fazla 4 (önceden 3), yerde kalma 26 saniye. Duvar, TNT, tehlike ve diğer bufflardan güvenli uzaklık aranır; uygun yer bulunamazsa çıkış atlanır.
+
+## 3.5.1: Kalkan süresi
+Muhafız, Kalkan buffı ve Titanın verdiği kalkan canı 5 saniye sonra silinir; hasarla önce kırılabilir. Yeni kalkan kazanımı süreyi 5 saniyeye yeniler. Titanın hasar azaltma etkisi 10 saniye devam eder. HUD kalan kalkan canı ve saniyeyi gösterir.
