@@ -11,7 +11,7 @@ const CLASSES={
  jester:{name:'Soytarı',icon:'🃏',color:'#ffcc75',hp:90,speed:275,damage:21,interval:.27,skills:[{name:'Yan Adım',icon:'💨',cd:5},{name:'İkiz Aldatmaca',icon:'🎭',cd:13},{name:'Konfeti Salvosu',icon:'🎊',cd:16}],description:'E: 2 saniye aynı görünen, yürüyen ve hafif hasarla ateş eden kopya. Q: kaçış. R: yavaşlatan üçlü salvo.'},
  assault:{name:'Akıncı',icon:'⚔',color:'#5b9cff',hp:100,speed:260,damage:25,interval:.24,skills:[{name:'Atılma',icon:'💨',cd:4},{name:'Seri Tetik',icon:'🔥',cd:11},{name:'İtici Darbe',icon:'⚡',cd:16}],description:'Q: atılma. E: 3 saniye %30 hızlı ateş. R: öne doğru koni, 38 hasar ve geri itme.'},
  scout:{name:'İzci',icon:'🏹',color:'#55dfc2',hp:85,speed:305,damage:24,interval:.27,skills:[{name:'Uzun Atılma',icon:'💨',cd:5},{name:'Adrenalin',icon:'⚡',cd:12},{name:'Üçlü Keskin Atış',icon:'🎯',cd:17}],description:'Hızlı ve kırılgan. Uzun atılma, hız patlaması ve R ile ayrı ayrı kullanılan üç adet 42 hasarlık keskin atış.'},
- guardian:{name:'Muhafız',icon:'🛡',color:'#b6a0ff',hp:145,speed:215,damage:32,interval:.32,skills:[{name:'Hücum',icon:'💥',cd:6},{name:'Kale · 5 sn',icon:'🛡',cd:14},{name:'Yer Sarsıntısı',icon:'🌋',cd:18}],description:'Yüksek can, düşük hız. Hücum, 5 saniyelik 95 canlık kalkan ve yakında güçlü alan hasarı.'},
+ guardian:{name:'Muhafız',icon:'🛡',color:'#b6a0ff',hp:145,speed:215,damage:32,interval:.32,skills:[{name:'Hücum',icon:'💥',cd:6},{name:'Kale · 5 sn',icon:'🛡',cd:14},{name:'Yer Sarsıntısı',icon:'🌋',cd:18}],description:'Yüksek can, düşük hız. Hücum, 5 saniyelik 95 canlık kalkan. R: 40 yakın alan hasarı ve 2 saniye yavaşlatma.'},
  bomber:{name:'Bombacı',icon:'💣',color:'#ffad68',hp:105,speed:245,damage:27,interval:.28,skills:[{name:'Kaçış Atılması',icon:'💨',cd:5},{name:'Kara Mayını',icon:'💥',cd:10},{name:'Bomba Salvosu',icon:'🚀',cd:17}],description:'Alan kontrolü. Kaçış, düşmana tetiklenen mayın ve üç bombalık salvo.'}
 };
 const RARITIES={common:{name:'Sıradan',color:'#a8b2c1',weight:28},uncommon:{name:'Gelişmiş',color:'#69d990',weight:30},rare:{name:'Nadir',color:'#69adff',weight:23},epic:{name:'Destansı',color:'#bd87ff',weight:13},legendary:{name:'Legendary',color:'#ffd166',weight:6}};
@@ -214,7 +214,7 @@ function skill(room,p,index,target=null){
  }else if(p.classId==='bomber'){
   for(const a of [-.22,0,.22])makeBullet(room,p,p.a+a,{bomb:true,speed:460,life:.75,damage:38,r:95,scalePower:false});emit(room,{t:'shot',id:p.id,x:p.x,y:p.y,bomb:true});
  }else if(p.classId==='assault'){emit(room,{t:'cone',x:p.x,y:p.y,a:p.a,r:260,color:'#ffaf64'});for(const other of room.players.values()){const dx=other.x-p.x,dy=other.y-p.y,angle=Math.atan2(dy,dx)-p.a;if(!other.dead&&other.connected&&enemy(room,p,other)&&other!==p&&Math.hypot(dx,dy)<260&&Math.abs(Math.atan2(Math.sin(angle),Math.cos(angle)))<.65&&other.invuln<=0){damage(room,other,38,p.id);if(!other.dead)for(let i=0;i<12;i++)Object.assign(other,resolve(room.map,other.x+Math.cos(p.a)*8,other.y+Math.sin(p.a)*8));}}
- }else{const tank=p.classId==='guardian',r=tank?165:225;blast(room,p.x,p.y,r,tank?60:38,p.id,'#b6a0ff');if(tank)for(const other of room.players.values())if(other!==p&&enemy(room,p,other)&&distance(p,other)<r)other.slow=2;}
+ }else{const tank=p.classId==='guardian',r=tank?165:225;blast(room,p.x,p.y,r,tank?40:38,p.id,'#b6a0ff');if(tank)for(const other of room.players.values())if(other!==p&&enemy(room,p,other)&&distance(p,other)<r)other.slow=2;}
  return true;
 }
 function pickup(room,p,b){

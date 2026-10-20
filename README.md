@@ -1,4 +1,4 @@
-# Arena Savaşı · 3.6.0
+# Arena Savaşı · 3.6.1
 
 Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme ve oyuncu hesabı gerekmez.
 
@@ -58,7 +58,7 @@ Parantezler bekleme süresidir; etkilerin süresiyle aynı değildir.
 - **Soytarı:** E: 2 saniye aynı görünen, yürüyen ve hafif hasarla ateş eden kopya. Q: kaçış. R: yavaşlatan üçlü salvo.
 - **Akıncı:** Q: atılma. E: 3 saniye %30 hızlı ateş. R: öne doğru koni, 38 hasar ve geri itme.
 - **İzci:** Hızlı ve kırılgan. Uzun atılma, hız patlaması ve R ile ayrı ayrı kullanılan üç adet 42 hasarlık keskin atış.
-- **Muhafız:** Yüksek can, düşük hız. Hücum, 5 saniyelik 95 canlık kalkan ve yakında güçlü alan hasarı.
+- **Muhafız:** Yüksek can, düşük hız. Hücum, 5 saniyelik 95 canlık kalkan. R: 40 yakın alan hasarı ve 2 saniye yavaşlatma.
 - **Bombacı:** Alan kontrolü. Kaçış, düşmana tetiklenen mayın ve üç bombalık salvo.
 
 İzci'nin R yeteneği üç ayrı basışla kullanılır, üçüncü atıştan sonra beklemeye girer. Büyücü Q ile fareye doğru en fazla 380 birim ışınlanır; E buz büyüsü 22 hasar ve 0,5 saniye sabitleme uygular; R arkan küre 34 hasar verir ve en fazla üç hedefi deler. Suikastçı'nın görünmezliği saldırı veya hasarda bozulur; bayrak taşıyıcısı gizlenemez. Soytarı kopyası iki saniye yürür ve hafif hasarla ateş eder; oyuncu sayısına ve hedef puanına dahil değildir.
