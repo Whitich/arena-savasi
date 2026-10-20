@@ -1,92 +1,168 @@
-# Arena Savaşı · 3.1
+# Arena Savaşı · 3.6.0
 
-Arkadaşlarla tarayıcıdan oynanan arena. Oyuncular dosya indirmez, hesap açmaz.
+Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme ve oyuncu hesabı gerekmez.
 
-**Canlı oyun:** https://arena-savasi.onrender.com/
+**[Oyunu oyna](https://arena-savasi.onrender.com/)** · [GitHub Pages](https://whitich.github.io/arena-savasi/oyun.html)
 
-## Oda ve kontroller
+## Hızlı başlangıç
 
-Oyuncu adını, kişisel görünümünü ve sınıfını seç. **Oda oluştur** sekmesinden mod seçip oda kur; boş kod otomatik oluşturulur. **Oda linkini kopyala** ile arkadaşlarını çağır. Kodla katılan oyuncu odanın mevcut moduna girer. Oda başına en fazla 16 oyuncu vardır; oda kodu parola değildir.
+1. Oyuncu adını, sınıfını ve görünümünü seç.
+2. **Oda oluştur** sekmesinde mod seç. Oda kodunu boş bırakırsan otomatik üretilir.
+3. **Oda linkini kopyala** düğmesiyle arkadaşlarını çağır. Link veya kodla katılanlar odanın seçili moduna girer.
 
-Varsayılanlar: WASD/oklar hareket, sol tık/boşluk ateş, Q/E/R yetenekler, M ses. Ana menüde tuşlar değiştirilebilir ve tarayıcıda saklanır. Görünüm için 10 renk, 4 desen ve taç/boynuz/anten seçenekleri vardır. Takım renkleri ayrı halkayla gösterilir.
+Oda kapasitesi 16 oyuncudur. Oda kodu parola değildir.
 
-## Dört mod
+## Oyun modları ve kazanma hedefleri
 
-- **Normal Arena:** herkes tek; öldürme puanı. Hareketli testere, dönen taret ve aralıklı lav tehlikeleri yalnızca bu moddadır.
-- **Takım Ölüm Maçı:** kırmızı/mavi takımlar dengelenir; dost ateşi kapalıdır. Bireysel öldürme ve takım toplamları gösterilir. Ölüm ekranında başka sınıf seçilebilir; seçim 5 saniyelik yeniden doğuş sonunda uygulanır. Takım, görünüm ve skor korunur. Yeni sınıfın yetenekleri yarım bekleme süresiyle başlar.
-- **Bayrak Taşıma:** bayrak sende kaldıkça her saniye +1 puan. Canlı bir rakip seni öldürürse bayrak ona geçer; eski puanlar silinmez. Taşıyıcı ayrılırsa veya geçerli öldüren yoksa bayrak yere düşer. Bayrak taşıyıcısı görünmez olamaz.
-- **Alan Hakimiyeti:** herkes tek. Alan içinde tek başına kalınca her saniye +1 puan; birden fazla oyuncu girerse çekişme boyunca puan durur. Alan 15 saniyede bir en az 300 birim uzaktaki geçerli konuma taşınır. Puanlar korunur. Kopyalar alan puanı kazanmaz ve alanı çekişmeli yapmaz.
+| Mod | Kazanma hedefi | Kurallar |
+|---|---|---|
+| Normal Arena | 30 bireysel öldürme | Herkes tek; testere, taret ve lav tehlikeleri |
+| Takım Ölüm Maçı | 50 takım öldürmesi | Dengelenen kırmızı/mavi takımlar, dost ateşi kapalı |
+| Bayrak Taşıma | Toplam 100 taşıma saniyesi | Taşıyıcı saniyede 1 puan alır; öldüren bayrağı devralır; eski puanlar korunur |
+| Alan Hakimiyeti · Tekli | Toplam 100 alan saniyesi | Tek oyuncu alanı tutarsa puan alır; rakip girince durur |
+| Alan Hakimiyeti · Takımlı | Toplam 100 takım saniyesi | Rakipsiz takım saniyede yalnızca 1 ortak puan alır; rakip girince durur |
 
-## Sekiz sınıf ve ilk denge ayarları
+Alan her 15 saniyede taşınır. Tehlikeler yalnızca Normal Arena'dadır. Takımlı modlarda ölüm ekranından sınıf değiştirilebilir; yeniden doğuş 5 saniyedir. Diğer modlarda 3 saniyedir.
 
-| Sınıf | Can | Hız | Ana mermi | Q | E | R |
-|---|---:|---:|---|---|---|---|
-| Akıncı | 100 | 260 | 25 hasar / 0,24 sn | Atılma | 55 can kalkan | 38 alan hasarı |
-| İzci | 85 | 305 | 24 / 0,27 sn | Uzun atılma | 3 sn adrenalin | Ayrı ayrı 3 × 42 keskin atış |
-| Muhafız | 145 | 215 | 32 / 0,32 sn | Hücum | 95 can kalkan | 60 yakın alan hasarı + yavaşlatma |
-| Bombacı | 105 | 245 | 27 / 0,28 sn | Kaçış atılması | Kara mayını | 3 × 38 patlayıcı salvo |
-| Sekici | 95 | 255 | 18 / 0,29 sn; hız 920, ömür 1,65 sn, 3 sekme | Kayma | 4 sn sekme +2 ve hız +%15 | 5 × 15 hasarlı, 4 kez seken yaylım |
-| Büyücü | 90 | 245 | 23 / 0,28 sn | 30 alan hasarı | 40 can bariyer | Fareye doğru en fazla 380 birim ışınlanma |
-| Suikastçı | 80 | 310 | 20 / 0,25 sn | Gölge atılımı | 1 sn görünmezlik | 3 × 17 yakın menzilli hançer |
-| Soytarı | 90 | 275 | 21 / 0,27 sn | Yan adım | 2 sn hareket eden, hafif ateş eden kopya | 3 × 18 hasar + 1 sn yavaşlatma |
+Hedef tamamlanınca kazanan ve sonuç tablosu gösterilir. Bağlı herkes **Rövanşa Hazırım** dediğinde aynı odada yeni tur başlar. Skor, can, buff ve yetenek beklemeleri sıfırlanır; görünüm ve oyuncu kimliği korunur.
 
-İzci R'si tek basışta üç mermi saçmaz: her basış bir atış kullanır. Basışlar arasında en az 0,22 saniye vardır. Üçüncü atış 17 saniyelik ortak bekleme süresini başlatır. Haklar ekranda görünür. Ölüm, kullanılmamış kısmi şarjı bedelsiz yenilemez.
+## Kontroller
 
-Işınlanma menzili sunucuda sınırlandırılır. Hedef doluysa hedef çizgisinde geri gelerek uygun yer aranır; oyuncu duvarın veya TNT'nin içine yerleştirilmez.
+| İşlem | Varsayılan |
+|---|---|
+| Hareket | W / A / S / D; varsayılan hareket atamalarında oklar da çalışır |
+| Ateş | Sol tık veya Boşluk |
+| Yetenekler | Q / E / R |
+| Sesi aç/kapat | M |
 
-Görünmezlik saldırı veya hasarla bozulur. Rakiplere gönderilen konum listesinden oyuncu çıkarılır; kendisi ve takım arkadaşları saydam siluet görür. Bayrak taşıyıcısı gizlenemez.
+**Tuş ayarları** menüsünden değiştirilebilir. Atamalar bu tarayıcıda saklanır. Sol tık ateş etmeye devam eder.
 
-Soytarı'nın kopyası aynı isim, görünüm ve sınıfla görünür; rakibin oyun ekranında kopya etiketi bulunmaz. Sahibi ve takım arkadaşları ayırt edebilir. Kopya yön değiştirir, ilerler ve yaklaşık 0,33 saniyede bir 8 hasarlık hafif mermi atar; en fazla 2 saniye yaşar. Kopya öldürülmesi skor üretmez ve oyuncu sayısını artırmaz. Bu görsel aldatmaca, istemci verilerini inceleyen kişiye karşı bir gizleme garantisi değildir.
+## Sekiz sınıf
 
-## Kalkan ve iyileşme
+Parantezler bekleme süresidir; etkilerin süresiyle aynı değildir.
 
-Kalkan bir süreli dokunulmazlık değildir. Gelen hasar önce kalkan canından düşer; kalkan tükenince kalan hasar normal cana geçer. Kalkan zamanla azalmaz, öldüğünde temizlenir. Yetenek yeniden kullanımı kendi bekleme süresine tabidir. Kalkan buffı +35 kalkan verir; toplam en fazla 120 olur. Yeniden doğuşta ayrı, kısa 1 saniyelik doğuş koruması vardır.
+| Sınıf | Can | Q | E | R |
+|---|---:|---|---|---|
+| 🔷 Sekici | 95 | Kayarak Kaçış (5 sn) | Sekme Ustası (12 sn) | Çapraz Yaylım (18 sn) |
+| 🔮 Büyücü | 90 | Işınlanma (14 sn) | Buz Mührü (12 sn) | Arkan Küre (7 sn) |
+| 🗡 Suikastçı | 80 | Gölge Atılımı (6 sn) | Görünmezlik (11 sn) | Hançer Salvosu (16 sn) |
+| 🃏 Soytarı | 90 | Yan Adım (5 sn) | İkiz Aldatmaca (13 sn) | Konfeti Salvosu (16 sn) |
+| ⚔ Akıncı | 100 | Atılma (4 sn) | Seri Tetik (11 sn) | İtici Darbe (16 sn) |
+| 🏹 İzci | 85 | Uzun Atılma (5 sn) | Adrenalin (12 sn) | Üçlü Keskin Atış (17 sn) |
+| 🛡 Muhafız | 145 | Hücum (6 sn) | Kale · 5 sn (14 sn) | Yer Sarsıntısı (18 sn) |
+| 💣 Bombacı | 105 | Kaçış Atılması (5 sn) | Kara Mayını (10 sn) | Bomba Salvosu (17 sn) |
 
-Pasif iyileşme: 8 saniye hasar almadan bekledikten sonra saniyede yalnızca +1 can.
+- **Sekici:** Hızlı mermiler 3 kez seker ve uzun yaşar. E: 4 saniye daha fazla sekme. R: beşli seken yaylım.
+- **Büyücü:** Q: fareye doğru en fazla 380 birim ışınlanma; duvar içine girmez. E: uzun menzilli buz, 22 hasar ve 0,5 saniye sabitleme. R: delip geçen arkan küre (34 hasar).
+- **Suikastçı:** E: 1 saniye görünmezlik; saldırı veya hasar alınca bozulur. Q: atılma. R: yakın mesafeli üçlü hançer.
+- **Soytarı:** E: 2 saniye aynı görünen, yürüyen ve hafif hasarla ateş eden kopya. Q: kaçış. R: yavaşlatan üçlü salvo.
+- **Akıncı:** Q: atılma. E: 3 saniye %30 hızlı ateş. R: öne doğru koni, 38 hasar ve geri itme.
+- **İzci:** Hızlı ve kırılgan. Uzun atılma, hız patlaması ve R ile ayrı ayrı kullanılan üç adet 42 hasarlık keskin atış.
+- **Muhafız:** Yüksek can, düşük hız. Hücum, 5 saniyelik 95 canlık kalkan ve yakında güçlü alan hasarı.
+- **Bombacı:** Alan kontrolü. Kaçış, düşmana tetiklenen mayın ve üç bombalık salvo.
 
-## Buff birleşimleri
+İzci'nin R yeteneği üç ayrı basışla kullanılır, üçüncü atıştan sonra beklemeye girer. Büyücü Q ile fareye doğru en fazla 380 birim ışınlanır; E buz büyüsü 22 hasar ve 0,5 saniye sabitleme uygular; R arkan küre 34 hasar verir ve en fazla üç hedefi deler. Suikastçı'nın görünmezliği saldırı veya hasarda bozulur; bayrak taşıyıcısı gizlenemez. Soytarı kopyası iki saniye yürür ve hafif hasarla ateş eder; oyuncu sayısına ve hedef puanına dahil değildir.
 
-Normal bufflar: hız, çift namlu, güçlü mermi, +25 can, kalkan. Efsanevi bufflar: %70 uzun menzil (14 sn), hızlı tarama (10 sn), bomba fırlatıcı (12 sn), %20 can çalma (10 sn). Yeni buff doğumlarında efsanevi seçilme olasılığı %23'tür.
+## Karakter ve silah özelleştirme
 
-Çift namlu + bomba fırlatıcı iki bomba atar. Hızlı tarama bu silahın aralığını da kısaltır; güç patlama hasarını, menzil mermi ömrünü artırır ve can çalma gerçek can hasarına uygulanır. Denge için çift bombanın her biri daha düşük hasar ve yarıçap kullanır. Normal çift atış da mermi başına daha düşük hasarlıdır. Aktif yeteneklerin salvo hasarları ayrıca sabittir. Sekici'nin pasif sekmesi bomba buffıyla da çalışır. Sekme, mermi ömrünü sıfırlamaz; toplam ömür 3 saniyeyle sınırlıdır.
+Bütün seçenekler kozmetiktir: hasar, hız, menzil ve çarpışma alanını değiştirmez. Karakter ve silah görünümü diğer oyunculara da gönderilir; rastgele görünüm düğmesi bütün görünümü yeniler.
 
-TNT 50 can taşır, patladıktan 20 saniye sonra geri gelir; üzerinde oyuncu varsa güvenli çıkış için bekler. Alan hasarı ve zincirleme patlamalar sunucuda hesaplanır. Yakındaki diğer oyuncuların ateş ve yetenekleri mesafeye ve sağ/sol konumuna göre duyulur.
+- **Karakter:** 10 renk, 4 desen, 3 aura ve 2 vizör (kapatılabilir).
+- **8 başlık:** Gökkuşağı Unicorn, Kedi Kulakları, Büyücü Şapkası, DJ Kulaklık, Samuray Miğferi, Taç, Boynuz ve Anten. Başlıksız seçenek de var.
+- **7 hareket izi:** Gökkuşağı, Kalp İzi, Yıldız Tozu, Buz Parçaları, Kuyruklu Yıldız, Kıvılcım ve Neon Şerit. Kapatılabilir.
+- **6 silah görünümü:** Klasik, Neon Ray, Altın İşçilik, Şeker Kamışı, Kozmik ve Buz Kristali. Silah rengi karakter renginden ayrı seçilir (10 renk).
 
-## Yayın ve test
+Gökkuşağı Unicorn başlığı beyaz kulaklı bir başlık, renkli yele ve gökkuşağı çizgili tek boynuz içerir. Lobi önizlemesi seçimleri gösterir. Görünüm bu tarayıcıda kaydedilir. **Hafif efekt** ayarında hareket izleri çizilmez ve parçacıklar azaltılır; oyun kuralları aynıdır.
 
-Node.js 22+: `npm ci`, `npm start`. Yerel adres http://localhost:8080. Oyuncular Node kurmaz. Oyun sayfası ile WebSocket sunucusu aynı Render hizmetindedir; GitHub Pages istemcisi aynı sunucuya bağlanır.
+## Sana özel beş harita görünümü
 
-Kod `main` dalına gönderilir. Bu kurulumda otomatik tetikleme doğrulanamadığı için Render'dan **Manual Deploy → Deploy latest commit** kullanılır. `/health` içindeki `version` Git commit'iyle ve `release` sürümle eşleştirilir. Açık sekmeler yeni sürümü almak için yenilenmelidir.
+**Neon Tersane · Kadim Orman · Buz Üssü · Çöl Harabeleri · Kızıl Dökümhane**
 
-Ücretsiz Frankfurt hizmeti, 15 dakika trafik almayınca uyuyabilir; sonraki ilk açılış yaklaşık bir dakika sürebilir. Skorlar ve odalar bellektedir; yayın/yeniden başlatmada sıfırlanır. Boş odalar beş dakikada temizlenir. Kısa kopuşlarda oyuncu oturumu 30 saniye korunur. Kaynaklar: https://render.com/docs/free ve https://render.com/docs/websocket.
+Lobiden veya maç içindeki harita görünümü düğmesinden seçilir. Zemin desenleri, duvar malzemeleri ve renkler değişir. Herkes kendi temasını görür; engeller ve çarpışmalar herkes için aynıdır. Seçim yalnızca bu tarayıcıda saklanır. Görünüm menüsü maçı duraklatmaz.
 
-`npm test`: sınıflar, sekme geometrisi ve ömrü, kalkan kırılması/taşan hasar, üç şarjlı ulti, ışınlanma sınırları, görünmezlik için alıcıya göre veri süzme, kopya davranışı, buff birleşimleri, ölümde sınıf seçimi, alan puanı/çekişme/taşınma ve gerçek WebSocket akışları.
+## Kalkan, can ve savaş geri bildirimi
 
-Sunucu 40 Hz simülasyon, 20 Hz durum yayını yapar. Konum, hasar, mermi, skor, sınıf, buff ve hedefler sunucu tarafından hesaplanır. İstemci bildirimleriyle can/puan/öldürme verilemez. Bu kapsamlı bot veya DDoS koruması anlamına gelmez. Yönetim anahtarları istemciye konmaz; yeniden bağlanma belirteci yalnızca oyuncunun kısa süreli oda oturumuna aittir.
+- Kalkan gelen hasarı önce kendi canından karşılar; taşan hasar normal cana geçer. **Kalkan canı 5 saniye sonra kendiliğinden silinir.** Yeni kalkan kazanımı süreyi yeniler. Bufflarla toplam en fazla 120 kalkan canı olur.
+- Titan Zırhı'nın kalkan kısmı 5 saniye, hasar azaltma kısmı 10 saniyedir.
+- Pasif can yenileme, son hasardan 8 saniye sonra saniyede 1 candır.
+- Yeniden doğuş koruması ayrı olarak 1 saniyedir.
+- İsabet işareti, hasar sayıları, kalkan kırılma efekti, öldürme sesi ve kritik can uyarısı vardır. Yakındaki oyuncuların ateş sesleri mesafe ve yöne göre duyulur.
+- TNT patladıktan 20 saniye sonra geri gelir; üzerinde oyuncu varsa bekler.
 
-## Maç hedefleri ve vuruş hissi · 3.1
+## 22 buff · beş nadirlik
 
-Her modun ayrı varsayılan bitiş hedefi vardır: Normal Arena 30 bireysel öldürme, Takım Ölüm Maçı 50 takım öldürmesi, Bayrak Taşıma 100 biriktirilmiş taşıma saniyesi, Alan Hakimiyeti 100 biriktirilmiş alan puanı. Genel bir 5 dakika zorunluluğu yoktur. Hedefler lobide ve oyun içi skor panelinde görünür.
+Haritadaki halkalar, nadirlik yazısı ve 1–5 küçük işaret kademeyi gösterir. İlk buff 2 saniyede, sonrakiler uygun yer bulunursa **6,5 saniyede bir** çıkar. Aynı anda en fazla **4 buff** bulunur; alınmayan buff 26 saniye sonra kaybolur.
 
-Hedefe ulaşınca sunucu mücadeleyi durdurur. Zafer ekranında kazanan oyuncu/takım, maç süresi, son puanlar, öldürme/ölüm değerleri ve ilgili öne çıkan oyuncular gösterilir. Bağlı herkes "Rövanşa hazırım" dediğinde aynı odada yeni tur başlar; sonuç ekranı en az üç saniye açık kalır. Skorlar, can, yetenek beklemeleri, bufflar, mermiler, TNT ve hedefler sıfırlanır; oyuncu kimliği, görünümü ve sınıfı korunur. Harita aynı kalır. Tek oyuncu diğerleri hazır olmadan maçı sıfırlayamaz. Ayrılan oyuncuların hazır oyu beklenmez.
+| Nadirlik | Renk | Çıkış ağırlığı |
+|---|---|---:|
+| Sıradan | Gri | %28 |
+| Gelişmiş | Yeşil | %30 |
+| Nadir | Mavi | %23 |
+| Destansı | Mor | %13 |
+| Legendary | Sarı | %6 |
 
-Vuruşta imleçte isabet işareti ve hedef üstünde hasar sayısı çıkar. Kalkan hasarı mavi, normal can hasarı beyaz, öldürme işareti altın renktedir. Kalkan kırılmasında parçacıklar ve ayrı bir ses, öldürmede kısa bir bildirim ve belirgin ses çalar. Can %25 veya altına indiğinde ekran kenarlarında ve can çubuğunda kritik can uyarısı görünür. Kalkanın emdiği hasar normal can kaybı gibi kırmızı parlatılmaz. M ile sesler kapatılabilir.
+Aynı kademe içindeki bufflar eşit olasılıklıdır. Aynı süreli buffı tekrar almak süreyi yeniler; aynı etkiyi sınırsız katlamaz. Ölümde aktif bufflar temizlenir. Lobideki **Buff rehberi** süreleri ve birleşimleri gösterir.
 
-## 3.2: Takımlı alan ve sınıf kimlikleri
-Alan Hakimiyeti tekli ve takımlı seçilir. Takımlıda rakipsiz takım saniyede 1 ortak puan alır; oyuncu sayısı puanı çoğaltmaz. Rakip girince puan durur, 100 takım saniyesinde maç biter. Dost ateşi kapalıdır; ölümde sınıf değişir.
-Büyücü R: 34 hasarlı, en fazla üç hedefi delen arkan küre (7s). E: 22 hasar, yaklaşık 966 menzil ve 0,5s hareket sabitleyen buz (12s); duvarlarda durur, dokunulmaz hedefi sabitlemez. Q ışınlanma (14s).
-Muhafız sınıf kalkanını korur. Akıncı E: 3s boyunca %30 hızlı ateş (11s), R: 260 menzilli öne koni, 38 hasar ve 96 birim duvar kontrollü geri itme (16s). Buz, arkan küre ve Akıncı etkileri farklı görseller kullanır.
+### Sıradan · Gri
 
-## 3.3: Görsel yenileme
-Aura (yörünge/rün/nabız), üç hareket izi ve iki vizör lobi önizlemesiyle seçilir, tarayıcıda saklanır ve sunucu tarafından doğrulanıp tüm oyunculara gönderilir. Rastgele görünüm düğmesi vardır. Tam/Hafif efekt seçimi yalnızca yerel çizimi etkiler. Zemin tek sefer çizilip önbelleğe alınır; parçacık sayısı Tam modda 360, Hafif modda 120 ile sınırlıdır. Neon palet, gölgeli duvarlar ve TNT, mermi izleri, doğuş ve ışınlanma efektleri yenilendi. Oyun kuralları, fizik, hasar ve bekleme süreleri aynı kalır.
+- **✚ İlk Yardım:** Anında +15 can.
+- **⌛ Enerji Parçası:** Yetenek beklemelerinden 2 saniye düşürür.
 
-## 3.4: Kişisel harita temaları
-Neon Tersane, Kadim Orman, Buz Üssü, Çöl Harabeleri ve Kızıl Dökümhane: beş ayrı zemin deseni ve duvar malzemesi. Lobi veya oyun içi görünüm düğmesiyle seçilir; yalnızca localStorage arena_map_theme alanına kaydedilir ve sunucuya gönderilmez. Tema değişince zemin önbelleği yenilenir. Geometri, görüş, çarpışma ve oyun durumu değişmez; tema menüsü açıkken oyuncu girdileri durdurulur, canlı maç devam eder.
+### Gelişmiş · Yeşil
 
-## 3.5: 22 buff ve beş nadirlik
-Sıradan gri (%28), Gelişmiş yeşil (%30), Nadir mavi (%23), Destansı mor (%13), Legendary sarı (%6). Her kademenin içinden eşit seçim yapılır. Her buffın nadirlik halkası, 1–5 işareti ve adı vardır; lobi rehberi süreleri ve birleşimleri açıklar.
-Yeni bufflar: İlk Yardım, Enerji Parçası, İvme Mermisi, Mıknatıs, Yenilenme, Çelik Deri, Odak, Buzlu Mermi, Sekme Çekirdeği, Delici Mermi, Avcı İçgüdüsü, Yıldız Salvosu ve Titan Zırhı. Süre yenileme aynı etkiyi üst üste katlamaz; ölümde temizlenir. Hasar azaltmalarında en güçlü etki geçerlidir. Üçlü + çift namlu dörtlüye dönüşür, bomba ile birleşir; bombalar delme/yavaşlatma almaz.
-İlk çıkış 2 saniye; sonraki aralık 8 yerine 6,5 saniye, aynı anda en fazla 4 (önceden 3), yerde kalma 26 saniye. Duvar, TNT, tehlike ve diğer bufflardan güvenli uzaklık aranır; uygun yer bulunamazsa çıkış atlanır.
+- **♥ Can Paketi:** Anında +25 can.
+- **⚡ Hız:** 8 saniye %45 hızlı hareket.
+- **➤ İvme Mermisi:** 10 saniye silah mermileri %25 daha hızlı.
+- **🧲 Mıknatıs:** 12 saniye buffları 90 birimden topla; duvar arkasını çekmez.
+- **✚ Yenilenme:** 8 saniye +2 can/sn; son 2 saniyede hasar aldıysan durur.
 
-## 3.5.1: Kalkan süresi
-Muhafız, Kalkan buffı ve Titanın verdiği kalkan canı 5 saniye sonra silinir; hasarla önce kırılabilir. Yeni kalkan kazanımı süreyi 5 saniyeye yeniler. Titanın hasar azaltma etkisi 10 saniye devam eder. HUD kalan kalkan canı ve saniyeyi gösterir.
+### Nadir · Mavi
+
+- **🛡 Kalkan:** 5 saniyelik +35 kalkan canı. Toplam en fazla 120; tekrar alınca süre yenilenir.
+- **💥 Güçlü Mermi:** 9 saniye silah hasarı %40 artar.
+- **◆ Çelik Deri:** 9 saniye alınan hasar %20 azalır. Titan ile en güçlü koruma geçerli.
+- **◉ Odak:** 10 saniye yetenek beklemeleri %25 hızlı dolar.
+- **❄ Buzlu Mermi:** 9 saniye normal silah isabetleri 0,6 saniye yavaşlatır. Bombaya uygulanmaz.
+
+### Destansı · Mor
+
+- **🔫 Çift Namlu:** 9 saniye iki mermi; her biri %76 hasar. Bomba ile birleşir.
+- **🎯 Uzun Menzil:** 14 saniye mermi ömrü %70 artar (en fazla 3 saniye).
+- **◇ Sekme Çekirdeği:** 10 saniye silah mermilerine +1 sekme. Sekici ve bombayla birleşir.
+- **⇢ Delici Mermi:** 9 saniye silah mermisi bir ek hedefi deler; aynı hedefe tekrar vurmaz. Bomba hariç.
+- **◎ Avcı İçgüdüsü:** 9 saniye %35 canın altındaki rakiplere %20 fazla hasar.
+
+### Legendary · Sarı
+
+- **⚡ Hızlı Tarama:** 10 saniye atış aralığı %42 azalır.
+- **🚀 Bomba Fırlatıcı:** 12 saniye silahın patlayıcı bomba atar. Çoklu atış ile birleşir.
+- **🩸 Can Çalma:** 10 saniye verdiğin gerçek can hasarının %20’sini iyileş.
+- **✴ Yıldız Salvosu:** 9 saniye üçlü atış (%60 hasar). Çift Namlu ile dörtlü (%50), bomba ile de birleşir.
+- **⬟ Titan Zırhı:** 5 saniyelik +35 kalkan, 10 saniye %30 hasar azaltma; karşılığında %10 yavaş hareket.
+
+Üçlü atış + Çift Namlu dört mermiye dönüşür; Bomba Fırlatıcı ile de birleşir. Çoklu bombaların hasarı ve yarıçapı denge için azaltılır. Delici/Buzlu Mermi bombalara uygulanmaz; Sekme Çekirdeği uygulanır. Çelik Deri ve Titan birlikteyken en güçlü hasar azaltma geçerlidir. Mıknatıs duvar ve TNT arkasındaki buffı çekmez.
+
+## Geliştirme ve yayın
+
+Sunucu için Node.js 22 veya üzeri gerekir. Oyuncuların Node.js kurmasına gerek yoktur.
+
+```sh
+npm ci
+npm start
+# http://localhost:8080
+npm test
+```
+
+- **oyun.html:** lobi, HUD ve menüler.
+- **client.js:** çizim, sesler, kişisel ayarlar, giriş ve ağ istemcisi.
+- **game-core.js:** ortak tanımlar ve sunucunun işlettiği oyun simülasyonu.
+- **server.cjs:** HTTP/WebSocket, odalar ve oturumlar.
+- **render.yaml:** Render dağıtım tanımı.
+
+Oyun ve WebSocket sunucusu aynı Render hizmetinde çalışır. GitHub Pages istemcisi de canlı sunucuya bağlanır. Bu kurulumda güncellemeden sonra Render'da **Manual Deploy → Deploy latest commit** kullanılır. **/health** içindeki release sürümü ve version commit'i yayın kontrolü için kullanılır. Açık oyun sekmelerini yeni yayından sonra Ctrl+F5 ile yenile.
+
+Odalar ve skorlar bellekte tutulur; sunucu yeniden başlatıldığında sıfırlanır. Boş odalar beş dakikada temizlenir; kısa kopuşlarda oyuncu oturumu 30 saniye korunur. Ücretsiz servis boşta kaldığında uyuyabilir, ilk açılış gecikebilir.
+
+Sunucu 40 Hz simülasyon ve 20 Hz durum yayını kullanır. Konum, hasar, skor, mermi, hedef ve buff hesapları sunucudadır. Yönetim anahtarları istemciye konmaz. Kapsamlı bot veya DDoS koruması iddiası yoktur.
+
+Testler; sınıfları, mod hedeflerini, rövanşı, kalkan süresini, buff birleşimlerini, nadirlik havuzlarını, hareket/çarpışmayı, görünmezliği ve gerçek WebSocket akışlarını kapsar.

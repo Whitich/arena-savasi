@@ -10,8 +10,8 @@ async function packet(ws,predicate,timeout=3000){const until=Date.now()+timeout;
 const join=(t,code,extra={})=>({t,code,name:'Tester',classId:'assault',mode:'tdm',...extra});
 test('create/join respect room mode, balance teams and reject missing rooms',async t=>{
  const app=await fixture(t),a=await app.connect(),b=await app.connect(),missing=await app.connect();
- a.json(join('create','TEAM',{cosmetics:{color:'coral',pattern:'star',hat:'crown',aura:'rune',trail:'ribbon',visor:'eyes'}}));const aw=await packet(a,o=>o.t==='welcome');b.json(join('join','TEAM',{mode:'flag'}));const bw=await packet(b,o=>o.t==='welcome');
- assert.equal(bw.mode,'tdm');assert.deepEqual(bw.state.players.find(p=>p.id===aw.id).cosmetics,{color:'coral',pattern:'star',hat:'crown',aura:'rune',trail:'ribbon',visor:'eyes'});assert.equal(bw.state.players.find(p=>p.id===aw.id).team,0);assert.equal(bw.state.players.find(p=>p.id===bw.id).team,1);
+ a.json(join('create','TEAM',{cosmetics:{color:'coral',pattern:'star',hat:'crown',aura:'rune',trail:'ribbon',visor:'eyes',weapon:'neon',weaponColor:'ice'}}));const aw=await packet(a,o=>o.t==='welcome');b.json(join('join','TEAM',{mode:'flag'}));const bw=await packet(b,o=>o.t==='welcome');
+ assert.equal(bw.mode,'tdm');assert.deepEqual(bw.state.players.find(p=>p.id===aw.id).cosmetics,{color:'coral',pattern:'star',hat:'crown',aura:'rune',trail:'ribbon',visor:'eyes',weapon:'neon',weaponColor:'ice'});assert.equal(bw.state.players.find(p=>p.id===aw.id).team,0);assert.equal(bw.state.players.find(p=>p.id===bw.id).team,1);
  missing.json(join('join','MISSING'));assert.equal((await packet(missing,o=>o.t==='error')).code,'NOT_FOUND');
 });
 test('real input causes server shots, kills and synchronized team scores; forged reports are ignored',async t=>{
@@ -34,7 +34,7 @@ test('resume token restores own player, copied id cannot impersonate and rooms r
 test('static assets and deployment health are served',async t=>{
  const app=await fixture(t),base='http://127.0.0.1:'+app.server.address().port;
  for(const file of ['/','/client.js','/game-core.js','/server-config.js'])assert.equal((await fetch(base+file)).status,200);
- assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'3.5.1');assert.equal((await fetch(base+'/server.cjs')).status,404);
+ assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'3.6.0');assert.equal((await fetch(base+'/server.cjs')).status,404);
 });
 test('invisibility is filtered per real WebSocket recipient, then firing reveals the assassin',async t=>{
  const app=await fixture(t),a=await app.connect(),b=await app.connect();a.json(join('create','HIDDEN',{mode:'normal',classId:'assassin'}));const aw=await packet(a,o=>o.t==='welcome');b.json(join('join','HIDDEN'));await packet(b,o=>o.t==='welcome');

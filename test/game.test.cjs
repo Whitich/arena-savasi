@@ -47,7 +47,7 @@ test('snapshot is serializable and never contains session tokens or sockets',()=
  const r=empty();const p=add(r);p.token='PRIVATE';p.ws={private:true};const text=JSON.stringify(G.snapshot(r));assert.ok(!text.includes('PRIVATE'));assert.ok(!text.includes('private'));
 });
 test('cosmetics validate all choices, reject injected values and survive snapshots',()=>{
- const look=G.normalizeCosmetics({color:'coral',pattern:'star',hat:'crown',aura:'rune',trail:'comet',visor:'glass'});assert.deepEqual(look,{color:'coral',pattern:'star',hat:'crown',aura:'rune',trail:'comet',visor:'glass'});
+ const look=G.normalizeCosmetics({color:'coral',pattern:'star',hat:'crown',aura:'rune',trail:'comet',visor:'glass',weapon:'candy',weaponColor:'coral'});assert.deepEqual(look,{color:'coral',pattern:'star',hat:'crown',aura:'rune',trail:'comet',visor:'glass',weapon:'candy',weaponColor:'coral'});
  const bad=G.normalizeCosmetics({color:'<script>',pattern:'__proto__',hat:'constructor'},'test');assert.ok(Object.hasOwn(G.COSMETICS.colors,bad.color));assert.equal(bad.pattern,'plain');assert.equal(bad.hat,'none');
  const r=empty('tdm'),p=G.addPlayer(r,'a','Alice','guardian',look);const other=G.addPlayer(r,'b','Bob','guardian',{color:'mint',pattern:'stripe',hat:'antenna'});
  const state=G.snapshot(r);assert.equal(state.players[0].cosmetics.color,'coral');assert.equal(state.players[1].cosmetics.color,'mint');assert.equal(p.maxHp,145);assert.notEqual(p.team,other.team);
