@@ -1,6 +1,6 @@
 'use strict';
 const G=window.ArenaCore,$=id=>document.getElementById(id),cv=$('cv'),ctx=cv.getContext('2d');
-const {CLASSES,MODES,BUFFS,clamp,W,H,RAD}=G;
+const {CLASSES,MODES,BUFFS,RARITIES,clamp,W,H,RAD}=G;
 const TEAM_COLORS=['#ff728b','#68a8ff'];
 const BIND_LABELS={up:'Yukarı',down:'Aşağı',left:'Sol',right:'Sağ',fire:'Ateş (klavye)',skill1:'1. yetenek',skill2:'2. yetenek',skill3:'3. yetenek',mute:'Sesi aç / kapat'};
 const store={get(k,fallback){try{return JSON.parse(localStorage.getItem(k))??fallback;}catch{return fallback;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}};
@@ -57,6 +57,8 @@ function openThemes(){resetInputs();renderThemeChoices();$('themeDialog').showMo
 $('themeOpen').onclick=openThemes;$('mapThemeButton').onclick=openThemes;
 $('themeClose').onclick=()=>$('themeDialog').close();$('themeDone').onclick=()=>$('themeDialog').close();
 $('themeChoices').onclick=e=>{const b=e.target.closest('[data-theme]');if(!b)return;mapTheme=b.dataset.theme;floorLayer=null;store.set('arena_map_theme',mapTheme);renderThemeChoices();};
+function openBuffGuide(){resetInputs();$('buffGuideList').innerHTML=Object.entries(RARITIES).map(([id,t])=>`<section class="rarity-group" style="--rarity:${t.color}"><h3>${t.name}</h3>${Object.values(BUFFS).filter(b=>b.rarity===id).map(b=>`<div><strong>${b.icon} ${b.name}${b.duration?' · '+b.duration+' sn':''}</strong><p>${b.description}</p></div>`).join('')}</section>`).join('');$('buffGuide').showModal();}
+$('buffGuideOpen').onclick=openBuffGuide;$('buffGuideClose').onclick=()=>$('buffGuide').close();
 function renderLobby(){
  renderCustomizer();$('themeName').textContent=MAP_THEMES[mapTheme].name;$('mapThemeButton').textContent='◈ '+MAP_THEMES[mapTheme].name;
  $('createTab').classList.toggle('active',lobbyAction==='create');$('joinTab').classList.toggle('active',lobbyAction==='join');
@@ -115,7 +117,7 @@ function effects(events){
   else if(e.t==='cast'||e.t==='freeze'){burst(e.x,e.y,e.color,18);rings.push({x:e.x,y:e.y,r:e.t==='freeze'?38:55,t:0,max:.4,color:e.color});sound('buff',e.x,e.y);}
   else if(e.t==='cone'){for(let i=-5;i<=5;i++){const a=e.a+i*.12;burst(e.x+Math.cos(a)*120,e.y+Math.sin(a)*120,e.color,5);}sound('boom',e.x,e.y);}
   else if(e.t==='skill')burst(e.x,e.y,'#9ae8ea',10);
-  else if(e.t==='pickup'){burst(e.x,e.y,BUFFS[e.kind].color,16);sound('buff',e.x,e.y);if(e.id===myId)addFeed(`${BUFFS[e.kind].legendary?'★ EFSANEVİ · ':''}${BUFFS[e.kind].name} aldın!`,true);}
+  else if(e.t==='pickup'){burst(e.x,e.y,BUFFS[e.kind].color,16);sound('buff',e.x,e.y);if(e.id===myId)addFeed(`${RARITIES[BUFFS[e.kind].rarity].name} · ${BUFFS[e.kind].name} aldın! · ${BUFFS[e.kind].description}`,true);}
   else if(e.t==='death'){
    const victim=knownPlayer(e.id),killer=knownPlayer(e.killer);burst(e.x,e.y,victim?classColor(victim):'#ff829b',25);addFeed(killer?`${killer.name} → ${victim?.name||'Oyuncu'}`:`${victim?.name||'Oyuncu'} haritaya yenildi`);
    if(e.killer===myId){sound('kill');hitUntil=performance.now()+450;hitColor='#ffd166';killToastUntil=performance.now()+1500;$('killToast').textContent=(victim?.name||'Rakip')+' saf dışı!';$('killToast').classList.remove('hidden');}
@@ -195,7 +197,7 @@ window.addEventListener('keydown',e=>{
   const conflict=Object.entries(bindings).find(([id,key])=>id!==bindingAction&&key===e.code);if(conflict){$('bindHint').textContent=`Bu tuş ${BIND_LABELS[conflict[0]]} için kullanılıyor. Önce onu değiştir.`;return;}
   bindings[bindingAction]=e.code;store.set('arena_bindings_v2',bindings);bindingAction=null;renderBindings();renderLobby();$('bindHint').textContent='Tuş kaydedildi.';return;
  }
- if(!playing||world?.match?.status==='finished'||$('settings').open||$('themeDialog').open||e.target.closest('input,button,textarea,select'))return;
+ if(!playing||world?.match?.status==='finished'||$('settings').open||$('themeDialog').open||$('buffGuide').open||e.target.closest('input,button,textarea,select'))return;
  if(Object.values(bindings).includes(e.code)||e.code.startsWith('Arrow'))e.preventDefault();keys.add(e.code);if(e.repeat)return;
  const index=[bindings.skill1,bindings.skill2,bindings.skill3].indexOf(e.code);if(index>=0){const target=cursorTarget();send({t:'skill',index,a:aim,x:target.x,y:target.y});}
  if(e.code===bindings.mute){muted=!muted;store.set('arena_muted',muted);addFeed(muted?'Ses kapatıldı':'Ses açıldı');if(!muted)initAudio();}
@@ -224,7 +226,7 @@ function loop(now){
  if(mouse.moved&&renderPos)aim=Math.atan2(mouse.y/s-cam.y-renderPos.y,mouse.x/s-cam.x-renderPos.x);else if(moving.x||moving.y)aim=Math.atan2(moving.y,moving.x);
  if(ws?.readyState===1&&world.match?.status!=='finished'&&me&&!me.dead&&renderPos){
   let mx=moving.x,my=moving.y;const len=Math.hypot(mx,my);if(len>1){mx/=len;my/=len;}
-  const c=CLASSES[me.classId],age=Math.min(.15,(now-stateAt)/1000);let speed=c.speed*(me.buffs.speed>0?1.45:1)*(me.haste>0?1.5:1)*(me.slow>0?.55:1);
+  const c=CLASSES[me.classId],age=Math.min(.15,(now-stateAt)/1000);let speed=c.speed*(me.buffs.speed>0?1.45:1)*(me.haste>0?1.5:1)*(me.slow>0?.55:1)*(me.buffs.titan>0?.9:1);
   if(me.dash>age){mx=Math.cos(me.a);my=Math.sin(me.a);speed=me.classId==='guardian'?850:1100;}
   if(me.root>age)speed=0;
   renderPos=G.resolve(map,renderPos.x+mx*speed*dt,renderPos.y+my*speed*dt);
@@ -302,7 +304,7 @@ function draw(now){
    circle(h.x,h.y,22,'#4f3741','#ab6b66',2);ctx.save();ctx.translate(h.x,h.y);ctx.rotate(h.angle);ctx.fillStyle='#fa9a76';ctx.fillRect(0,-5,32,10);ctx.restore();circle(h.x,h.y,8,'#ffd3a3');
   }else{circle(h.x,h.y,54,h.active?'#ff6c2e55':'#ff6c2e12',h.active?'#ff9b4f':'#744332',2);ctx.fillStyle=h.active?'#ffc57a':'#aa7952';ctx.font='bold 13px Segoe UI';ctx.textAlign='center';ctx.fillText(h.active?'LAV':'UYARI',h.x,h.y+4);}
  }
- for(const b of world.buffs){const c=BUFFS[b.kind],pulse=1+Math.sin(now/150+b.id)*.09;circle(b.x,b.y,29*pulse,c.color+'0b',c.color+'33',1);if(c.legendary){ctx.save();ctx.translate(b.x,b.y);ctx.rotate(now/1600);ctx.strokeStyle='#ffd16688';ctx.lineWidth=1.5;ctx.strokeRect(-23,-23,46,46);ctx.restore();}circle(b.x,b.y,25*pulse,c.color+'1f');circle(b.x,b.y,16*pulse,'#101b2d',c.color,c.legendary?3:2);ctx.font='17px Segoe UI Emoji';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(c.icon,b.x,b.y+6);ctx.font='bold 10px Segoe UI';ctx.fillStyle=c.color;ctx.fillText((c.legendary?'★ ':'')+c.name,b.x,b.y-31);}
+ for(const b of world.buffs){const c=BUFFS[b.kind],pulse=1+Math.sin(now/150+b.id)*.09;const tier=Object.keys(RARITIES).indexOf(c.rarity)+1;circle(b.x,b.y,29*pulse,'#050b1788',c.color,2);for(let i=0;i<tier;i++)circle(b.x+(i-(tier-1)/2)*6,b.y+36,1.8,c.color);circle(b.x,b.y,24*pulse,c.color+'13');if(c.legendary){ctx.save();ctx.translate(b.x,b.y);ctx.rotate(now/1600);ctx.strokeStyle='#ffd16688';ctx.lineWidth=1.5;ctx.strokeRect(-23,-23,46,46);ctx.restore();}circle(b.x,b.y,25*pulse,c.color+'1f');circle(b.x,b.y,16*pulse,'#101b2d',c.color,c.legendary?3:2);ctx.font='17px Segoe UI Emoji';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(c.icon,b.x,b.y+6);ctx.font='bold 10px Segoe UI';ctx.fillStyle=c.color;ctx.strokeStyle='#050b17';ctx.lineWidth=3;ctx.strokeText((c.legendary?'★ ':'')+c.name,b.x,b.y-35);ctx.fillText((c.legendary?'★ ':'')+c.name,b.x,b.y-35);ctx.font='8px Segoe UI';ctx.fillText(RARITIES[c.rarity].name.toLocaleUpperCase('tr'),b.x,b.y+49);}
  const me=localPlayer();for(const m of world.mines){const owner=players.get(m.owner);if(m.owner===myId||G.isTeamMode(roomMode)&&owner?.team===me?.team){circle(m.x,m.y,11,'#3b2b1d','#ffbc6b');circle(m.x,m.y,3,'#ff795a');}else circle(m.x,m.y,5,'#7e614e');}
  const bulletAge=Math.min(.09,(now-stateAt)/1000);
  for(const b of world.bullets){let x=b.x,y=b.y;const steps=Math.max(1,Math.ceil(Math.hypot(b.vx,b.vy)*bulletAge/8));for(let i=0;i<steps;i++){const nx=x+b.vx*bulletAge/steps,ny=y+b.vy*bulletAge/steps;if(nx<0||nx>W||ny<0||ny>H||G.inWall(map.walls,nx,ny))break;x=nx;y=ny;}if(b.bomb){circle(x,y,7,'#ffbd6c','#fff1bf',2);ctx.strokeStyle='#ffad6877';ctx.lineWidth=5;}else{ctx.strokeStyle=b.color+'24';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(x-b.vx*.035,y-b.vy*.035);ctx.lineTo(x,y);ctx.stroke();ctx.strokeStyle=b.color;ctx.lineWidth=3;}ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x-b.vx*.023,y-b.vy*.023);ctx.lineTo(x,y);ctx.stroke();if(b.kind){circle(x,y,b.kind==='frost'?7:10,b.color+'77',b.color,2);circle(x,y,3,'#fff');}else if(!b.bomb)circle(x,y,2.8,'#f5faff');}
@@ -320,6 +322,8 @@ function draw(now){
   if(p.shield>0)circle(pos.x,pos.y,26+Math.sin(now/100),null,'#78e6ef',2);
   if(p.invuln>0)circle(pos.x,pos.y,29,null,'#ffffff88',1);
   if(p.root>0){circle(pos.x,pos.y,24,null,'#83e8ff',3);ctx.fillStyle='#b9f5ff';ctx.font='bold 18px Segoe UI';ctx.fillText('❄',pos.x,pos.y-48);}
+  if(p.buffs.armor>0||p.buffs.titan>0)circle(pos.x,pos.y,22,null,p.buffs.titan>0?'#ffd16699':'#69adff88',2);
+  if(p.buffs.regen>0)circle(pos.x,pos.y,19,null,'#69d99066',1);
   if(p.overdrive>0)circle(pos.x,pos.y,23,null,'#ffaf64',3);
   if(p.haste>0)circle(pos.x,pos.y,21,null,'#69e3ba88',2);
   ctx.fillStyle='#050c16bb';roundRect(pos.x-25,pos.y-37,50,6,3);ctx.fill();ctx.fillStyle=p.hp/p.maxHp>.35?'#71deac':'#ff7791';roundRect(pos.x-25,pos.y-37,50*clamp(p.hp/p.maxHp,0,1),6,3);ctx.fill();
@@ -360,7 +364,7 @@ function updateHUD(){
  $('ping').textContent=`Ping: ${ping===null?'–':Math.round(ping)+' ms'} · ${Math.round(1000/Math.max(1,frameMs))} FPS`;
  $('hpbar').style.width=clamp(me.hp/me.maxHp*100,0,100)+'%';$('hptext').textContent=Math.ceil(me.hp)+' / '+me.maxHp+(me.shield>0?' · 🛡 '+Math.ceil(me.shield):'');$('shieldbar').style.width=clamp(me.shield/(me.shieldMax||120)*100,0,100)+'%';$('shieldwrap').classList.toggle('hidden',me.shield<=0);
  $('classPill').textContent=CLASSES[me.classId].name+(me.invis>0?' · GİZLİ':me.ricochetBoost>0?' · Sekme Ustası '+Math.ceil(me.ricochetBoost)+'s':'')+(G.isTeamMode(roomMode)?' · '+(me.team===0?'Kırmızı takım':'Mavi takım'):'');
- const active=Object.entries(me.buffs).filter(([k,t])=>t>0&&k!=='shield').map(([k,t])=>`<span class="buff-chip ${BUFFS[k].legendary?'legendary':''}" style="--buff-color:${BUFFS[k].color}">${BUFFS[k].legendary?'★ ':''}${BUFFS[k].icon} ${BUFFS[k].name} ${Math.ceil(t)}s</span>`).join('');setHTML($('buffrow'),active);
+ const active=Object.entries(me.buffs).filter(([k,t])=>t>0&&k!=='shield').map(([k,t])=>`<span class="buff-chip ${BUFFS[k].legendary?'legendary':''}" title="${RARITIES[BUFFS[k].rarity].name}: ${BUFFS[k].description}" style="--buff-color:${BUFFS[k].color}">${BUFFS[k].legendary?'★ ':''}${BUFFS[k].icon} ${BUFFS[k].name} ${Math.ceil(t)}s</span>`).join('');setHTML($('buffrow'),active);
  CLASSES[me.classId].skills.forEach((skill,i)=>{const el=$('sk-'+i),cd=me.cds[i];el.querySelector('.ico').textContent=skill.icon;el.querySelector('.key').textContent=keyLabel(bindings['skill'+(i+1)]);el.querySelector('.sname').textContent=skill.name;el.querySelector('.cdmask').style.height=clamp(cd/skill.cd*100,0,100)+'%';el.querySelector('.cdnum').textContent=cd>0?(cd<3?cd.toFixed(1):Math.ceil(cd)):(me.classId==='scout'&&i===2?me.ultShots+'/3':'');el.classList.toggle('ready',cd<=0);});
  const list=(world.roster||[...players.values()]).filter(p=>p.connected).sort((a,b)=>b.score-a.score||b.kills-a.kills);
  $('score').querySelector('h3').textContent=MODES[roomMode].name;

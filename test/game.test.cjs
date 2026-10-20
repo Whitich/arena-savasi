@@ -124,3 +124,29 @@ test('guardian alone grants class shields; assault has timed rapid fire and dire
  for(const id of ['mage','assault','guardian']){const r=empty(),p=add(r,'a',id);G.skill(r,p,1);assert.equal(p.shield,id==='guardian'?95:0);}
  const r=empty(),a=add(r,'a'),front=add(r,'b'),back=add(r,'c');Object.assign(a,{x:500,y:500,a:0});Object.assign(front,{x:600,y:500});Object.assign(back,{x:400,y:500});G.fire(r,a);const cd=a.shotCd;a.shotCd=0;G.skill(r,a,1);G.fire(r,a);assert.ok(a.shotCd<cd);r.bullets=[];G.skill(r,a,2);assert.equal(front.hp,62);assert.ok(front.x>680);assert.equal(back.hp,100);advance(r,3.1);assert.equal(a.overdrive,0);
 });
+function take(r,p,kind){r.buffs.push({id:++r.buffSeq,kind,x:p.x,y:p.y,life:26});G.step(r,.025);}
+test('all 22 buffs carry one of five shared rarity colors and every pickup is usable',()=>{
+ assert.equal(Object.keys(G.BUFFS).length,22);assert.equal(Object.keys(G.RARITIES).length,5);
+ for(const [kind,b]of Object.entries(G.BUFFS)){assert.equal(b.color,G.RARITIES[b.rarity].color);const r=empty(),p=add(r);p.hp=40;p.cds=[5,7,9];take(r,p,kind);assert.equal(r.buffs.length,0);assert.ok(r.events.some(e=>e.t==='pickup'&&e.kind===kind));if(b.duration)assert.equal(p.buffs[kind],b.duration);assert.ok(p.hp<=p.maxHp);assert.ok(p.shield<=120);}
+});
+test('health, energy and titan pickups cap resources and repeated timed pickup refreshes rather than stacks',()=>{
+ const r=empty(),p=add(r);p.hp=90;take(r,p,'smallheal');assert.equal(p.hp,100);p.cds=[5,1,0];take(r,p,'cooldown');assert.ok(Math.abs(p.cds[0]-2.975)<.001);assert.equal(p.cds[1],0);p.shield=110;take(r,p,'titan');assert.equal(p.shield,120);advance(r,2);take(r,p,'titan');assert.equal(p.buffs.titan,10);assert.equal(p.shield,120);
+});
+test('armor and titan use strongest reduction, execution respects friendly fire and lifesteal uses actual HP loss',()=>{
+ const r=empty('tdm'),a=add(r,'a'),b=add(r,'b'),ally=add(r,'c');b.buffs.armor=9;G.damage(r,b,20,a.id);assert.equal(b.hp,84);b.buffs.titan=10;G.damage(r,b,20,a.id);assert.equal(b.hp,70);
+ a.buffs.execute=9;a.buffs.vampire=10;a.hp=40;b.hp=30;G.damage(r,b,10,a.id);assert.ok(Math.abs(b.hp-21.6)<.001);assert.ok(Math.abs(a.hp-41.68)<.001);ally.hp=20;G.damage(r,ally,100,a.id);assert.equal(ally.hp,20);
+});
+test('regeneration waits for safe interval, focus accelerates cooldown and titan slows movement',()=>{
+ const r=empty(),p=add(r);p.hp=50;p.buffs.regen=8;p.buffs.focus=10;p.cds=[10,0,0];advance(r,1);assert.equal(p.hp,50);assert.ok(Math.abs(p.cds[0]-8.75)<.01);advance(r,2);assert.ok(p.hp>51.9);G.damage(r,p,5);const hp=p.hp;advance(r,1.9);assert.equal(p.hp,hp);p.buffs.titan=10;p.x=100;p.y=100;p.input.x=1;advance(r,1);assert.ok(Math.abs(p.x-334)<1);
+});
+test('weapon buff combinations produce four bounded bouncing bombs and piercing chilling bullets',()=>{
+ const r=empty(),p=add(r);p.x=100;p.y=100;p.a=0;p.buffs={double:9,multishot:9,launcher:9,velocity:9,bounce:9,power:9,rapid:9,range:9,pierce:9,chill:9};G.fire(r,p);assert.equal(r.bullets.length,4);for(const b of r.bullets){assert.equal(b.bomb,true);assert.equal(b.bounces,1);assert.equal(b.pierce,0);assert.equal(b.slow,0);assert.ok(b.life<=3);assert.equal(b.vx/Math.cos(Math.atan2(b.vy,b.vx)),587.5);}assert.ok(p.shotCd<.5);
+ r.bullets=[];p.buffs={pierce:9,chill:9};p.shotCd=0;const a=add(r,'a'),b=add(r,'b');Object.assign(a,{x:200,y:100});Object.assign(b,{x:300,y:100});G.fire(r,p);advance(r,.3);assert.equal(a.hp,75);assert.equal(b.hp,75);assert.ok(a.slow>0);assert.ok(b.slow>0);
+});
+test('magnet collects at 90 units but does not pull through solid walls',()=>{
+ const r=empty(),p=add(r);p.x=100;p.y=100;p.buffs.magnet=12;r.buffs=[{id:1,kind:'speed',x:180,y:100,life:26}];r.map.walls=[{x:140,y:50,w:20,h:100}];G.step(r,.025);assert.equal(r.buffs.length,1);r.map.walls=[];G.step(r,.025);assert.equal(r.buffs.length,0);assert.equal(p.buffs.speed,8);
+});
+test('spawn cadence is moderately faster, respects cap, valid positions and all rarity pools',()=>{
+ const r=empty();r.nextBuff=2;advance(r,1.9);assert.equal(r.buffSeq,0);advance(r,.2);assert.equal(r.buffSeq,1);advance(r,6.5);assert.equal(r.buffSeq,2);const seen=new Set();let max=0;
+ for(let i=0;i<16000;i++){G.step(r,.5);max=Math.max(max,r.buffs.length);for(const b of r.buffs){seen.add(b.kind);assert.ok(G.BUFFS[b.kind]);assert.ok(b.x>=120&&b.x<=1480);}}assert.equal(seen.size,22);assert.ok(max<=4);assert.ok(max>=3);
+});
