@@ -1,4 +1,4 @@
-# Arena Savaşı · 3.6.2
+# Arena Savaşı · 3.6.3
 
 Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme ve oyuncu hesabı gerekmez.
 
@@ -22,7 +22,7 @@ Oda kapasitesi 16 oyuncudur. Oda kodu parola değildir.
 | Alan Hakimiyeti · Tekli | Toplam 100 alan saniyesi | Tek oyuncu alanı tutarsa puan alır; rakip girince durur |
 | Alan Hakimiyeti · Takımlı | Toplam 100 takım saniyesi | Rakipsiz takım saniyede yalnızca 1 ortak puan alır; rakip girince durur |
 
-Alan her 15 saniyede taşınır. Tehlikeler yalnızca Normal Arena'dadır. Takımlı modlarda ölüm ekranından sınıf değiştirilebilir; yeniden doğuş 5 saniyedir. Diğer modlarda 3 saniyedir.
+Alan her 15 saniyede taşınır. Tehlikeler yalnızca Normal Arena'dadır. Metal testereler dönüş izi, mekanik taretler atışta namlu parlaması gösterir. Lav aktifleşmeden önce ısınma uyarısı verir; kızgın çatlaklar ve korlar aktif bölgeyi belirginleştirir. Bu görseller hasarı veya tehlike sürelerini değiştirmez. Takımlı modlarda ölüm ekranından sınıf değiştirilebilir; yeniden doğuş 5 saniyedir. Diğer modlarda 3 saniyedir.
 
 Hedef tamamlanınca kazanan ve sonuç tablosu gösterilir. Bağlı herkes **Rövanşa Hazırım** dediğinde aynı odada yeni tur başlar. Skor, can, buff ve yetenek beklemeleri sıfırlanır; görünüm ve oyuncu kimliği korunur.
 

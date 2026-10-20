@@ -344,7 +344,7 @@ function snapshot(room,viewerId=null){
  roster:[...room.players.values()].map(p=>({id:p.id,name:p.name,cosmetics:p.cosmetics,classId:p.classId,team:p.team,score:p.score,kills:p.kills,connected:p.connected})),players:visible,
  bullets:room.bullets.map(b=>({id:b.id,owner:b.owner,x:round(b.x),y:round(b.y),vx:round(b.vx),vy:round(b.vy),bomb:b.bomb,kind:b.kind,color:b.color})),
  barrels:room.map.barrels.map(b=>({id:b.id,hp:b.hp,respawn:round(b.respawn)})),buffs:room.buffs,mines:room.mines,
- hazards:room.map.hazards.map(h=>({id:h.id,type:h.type,x:round(h.x),y:round(h.y),angle:Math.round((h.angle||0)*1000)/1000,active:h.active||false}))};
+ hazards:room.map.hazards.map(h=>({id:h.id,type:h.type,x:round(h.x),y:round(h.y),angle:Math.round((h.angle||0)*1000)/1000,active:h.active||false,warning:h.type==='lava'&&!h.active&&(room.time+h.phase)%7>3.6}))};
 }
 return{W,H,RAD,isTeamMode,COSMETICS,normalizeCosmetics,CLASSES,MODES,BUFFS,RARITIES,DEFAULT_BINDINGS,clamp,hash,rng,resolve,inWall,generateMap,safePosition,createRoom,addPlayer,checkMatch,voteRematch,restartMatch,queueClass,enemy,damage,kill,blast,fire,skill,step,snapshot,dropFlag};
 });

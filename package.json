@@ -1,6 +1,6 @@
 {
   "name": "arena-savasi-server",
-  "version": "3.6.2",
+  "version": "3.6.3",
   "private": true,
   "scripts": {
     "start": "node server.cjs",
