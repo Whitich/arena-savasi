@@ -1,4 +1,4 @@
-# Arena Savaşı · 3.7.0
+# Arena Savaşı · 3.7.1
 
 Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme ve oyuncu hesabı gerekmez.
 
@@ -32,7 +32,7 @@ Hedef tamamlanınca kazanan ve sonuç tablosu gösterilir. Bağlı herkes **Röv
 - **Bayrak Taşıma:** yerdeki bayrağı almaya, taşıyıcıyı kovalamaya ve bayrak kendisindeyken rakipten uzaklaşmaya çalışır.
 - **Alan Hakimiyeti (tekli/takımlı):** hareket eden alanı takip eder, içeride kalıp rakiple savaşır.
 - Hareketli hedefin hızından mermi kesişme noktasını hesaplar; önleme atışında küçük nişan sapması ve yaklaşık 0,14–0,18 saniye karar aralığı vardır.
-- Engellerden A* yol bulma ile dolaşır. Yakınındaki buffları ana hedeften fazla sapmadan toplar; canı azsa iyileşmeye öncelik verir.
+- Haritanın öbür ucundaki görünür rakiplere de rota kurar. Engellerden A* yol bulma ile dolaşır; köşelerde erişilebilir dönüş noktalarını takip eder ve ilerleyemediğinde rotasını yeniden hesaplar. Yakınındaki buffları ana hedeften fazla sapmadan toplar; canı azsa iyileşmeye öncelik verir.
 - Yakındaki rakip/taret mermilerine karşı kısa adımları değerlendirir; testere, ısınan lav ve aktif lavdan kaçınmaya çalışır. Kusursuz kaçış garantisi yoktur.
 - Aynı can, silah, hasar ve yetenek kuralları geçerlidir. Duvar arkasını veya görünmez rakibi nişan hedefi olarak kullanmaz. Bot isimleri **BOT** ile başlar.
 - Rövanşta sadece bağlı insanlardan hazır oyu beklenir. Odada insan kalmazsa bot simülasyonu durur; oda normal boş oda süresiyle temizlenir.
