@@ -4,8 +4,8 @@ const G=require('../game-core.js');
 const empty=(mode='normal')=>{const r=G.createRoom('TEST',mode);r.map={walls:[],barrels:[],hazards:[]};r.nextBuff=1000;return r;};
 const add=(r,id='one',classId='assault')=>G.addPlayer(r,id,id,classId);
 function advance(r,time){for(let i=0;i<Math.round(time/.025);i++)G.step(r,.025);}
-test('eight classes have distinct stats and all twenty-four skills execute with cooldown',()=>{
- assert.equal(Object.keys(G.CLASSES).length,8);
+test('nine classes have distinct stats and all twenty-seven skills execute with cooldown',()=>{
+ assert.equal(Object.keys(G.CLASSES).length,9);
  for(const id of Object.keys(G.CLASSES))for(let i=0;i<3;i++){
   const r=empty(),p=add(r,'one',id);p.x=300;p.y=300;
   assert.equal(G.skill(r,p,i),true,id+' skill '+i);assert.ok(p.cds[i]>0||(id==='scout'&&i===2&&p.ultShots===2));assert.equal(G.skill(r,p,i),false);

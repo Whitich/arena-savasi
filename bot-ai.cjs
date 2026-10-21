@@ -3,9 +3,9 @@ const G=require('./game-core.js'),crypto=require('node:crypto');
 const CELL=40,COLS=G.W/CELL,ROWS=G.H/CELL,STEP=.14;
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function clearance(room,p){let d=Math.min(p.x,p.y,G.W-p.x,G.H-p.y);for(const w of room.map.walls)d=Math.min(d,Math.hypot(p.x-G.clamp(p.x,w.x,w.x+w.w),p.y-G.clamp(p.y,w.y,w.y+w.h)));for(const br of room.map.barrels)if(br.hp>0)d=Math.min(d,dist(p,br)-15);return d;}
-function clear(room,a,b,pad=19){const initial=clearance(room,a),required=Math.min(pad,Math.max(15.99,initial-.01)),n=Math.ceil(dist(a,b)/4);for(let i=0;i<=n;i++){const q={x:a.x+(b.x-a.x)*i/(n||1),y:a.y+(b.y-a.y)*i/(n||1)};if(clearance(room,q)<required-.001)return false;}return true;}
+function clear(room,a,b,pad=19){const initial=clearance(room,a),required=Math.min(pad,Math.max(15.99,initial-.01)),n=Math.ceil(dist(a,b)/4);for(let i=0;i<=n;i++){const q={x:a.x+(b.x-a.x)*i/(n||1),y:a.y+(b.y-a.y)*i/(n||1)};if(clearance(room,q)<required-.001)return false;for(const f of room.map.floors||[])if(f.state!=='solid'&&dist(q,f)<f.r+pad&&dist(q,f)<dist(a,f)-.01)return false;}return true;}
 
-function grid(room){if(room.botGrid&&room.botGrid.until>room.time&&room.botGrid.round===room.match.round)return room.botGrid;const open=new Uint8Array(COLS*ROWS);for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const p={x:x*CELL+20,y:y*CELL+20};open[y*COLS+x]=clear(room,p,p)?1:0;}return room.botGrid={open,until:room.time+1,round:room.match.round};}
+function grid(room){if(room.botGrid&&room.botGrid.until>room.time&&room.botGrid.round===room.match.round)return room.botGrid;const open=new Uint8Array(COLS*ROWS);for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const p={x:x*CELL+20,y:y*CELL+20};open[y*COLS+x]=clear(room,p,p)&&!(room.map.floors||[]).some(f=>f.state!=='solid'&&dist(f,p)<f.r+20)?1:0;}return room.botGrid={open,until:room.time+1,round:room.match.round};}
 function path(room,start,goal){const {open}=grid(room),point=i=>({x:(i%COLS)*CELL+20,y:Math.floor(i/COLS)*CELL+20});
  const nearest=p=>{const candidates=[];for(let i=0;i<open.length;i++)if(open[i])candidates.push({i,d:dist(p,point(i))});candidates.sort((a,b)=>a.d-b.d);for(const {i}of candidates)if(clear(room,p,point(i),17))return i;return -1;};const from=nearest(start),to=nearest(goal);if(from<0||to<0)return[];
  const costs=new Float64Array(open.length).fill(Infinity),prev=new Int32Array(open.length).fill(-1),closed=new Uint8Array(open.length),queue=[from];costs[from]=0;let loops=0;
@@ -14,7 +14,7 @@ function addBots(room,count){const names=['Atlas','Nova','Pixel','Kora','Orion',
 function wander(room,p){const cells=grid(room).open;for(let i=0;i<30;i++){const idx=Math.floor(room.random()*cells.length);if(cells[idx])return{x:(idx%COLS)*CELL+20,y:Math.floor(idx/COLS)*CELL+20};}return{x:800,y:500};}
 function flee(room,p,enemies){let best=null,bestScore=-Infinity;for(let i=0;i<12;i++){const a=i*Math.PI/6,q={x:G.clamp(p.x+Math.cos(a)*260,60,G.W-60),y:G.clamp(p.y+Math.sin(a)*260,60,G.H-60)};if(!clear(room,p,q))continue;const score=enemies.length?Math.min(...enemies.map(e=>dist(q,e))):dist(q,{x:800,y:500});if(score>bestScore){bestScore=score;best=q;}}return best||wander(room,p);}
 function danger(room,p,q){let score=0;for(const b of room.bullets){const owner=room.players.get(b.owner);if(b.owner===p.id||owner&&!G.enemy(room,p,owner)||dist(p,b)>360)continue;const v2=b.vx*b.vx+b.vy*b.vy;if(!v2)continue;const t=G.clamp(((q.x-b.x)*b.vx+(q.y-b.y)*b.vy)/v2,0,.45),d=Math.hypot(q.x-b.x-b.vx*t,q.y-b.y-b.vy*t);if(d<55)score+=(55-d)*7;}
- for(const h of room.map.hazards){const d=dist(q,h);if(h.type==='saw'&&d<85)score+=(85-d)*12;if(h.type==='lava'&&((room.time+h.phase)%7>3.6)&&d<100)score+=(100-d)*10;if(h.type==='turret'&&d<70)score+=(70-d)*4;}return score;}
+ for(const h of room.map.hazards){const d=dist(q,h);if(h.type==='saw'&&d<85)score+=(85-d)*12;if(h.type==='lava'&&((room.time+h.phase)%7>3.6)&&d<100)score+=(100-d)*10;if(h.type==='turret'&&d<70)score+=(70-d)*4;}for(const f of room.map.floors||[])if(f.state!=='solid'&&dist(q,f)<f.r+60)score+=(f.r+60-dist(q,f))*15;return score;}
 function intercept(shooter,target,speed){const rx=target.x-shooter.x,ry=target.y-shooter.y,vx=target.vx||0,vy=target.vy||0,a=vx*vx+vy*vy-speed*speed,b=2*(rx*vx+ry*vy),c=rx*rx+ry*ry;let t=0;if(Math.abs(a)<.00001){if(Math.abs(b)>.00001)t=Math.max(0,-c/b);}else{const d=b*b-4*a*c;if(d>=0){const roots=[(-b-Math.sqrt(d))/(2*a),(-b+Math.sqrt(d))/(2*a)].filter(t=>t>=0);if(roots.length)t=Math.min(...roots);}}t=Math.min(t,1.2);return{x:target.x+vx*t,y:target.y+vy*t,time:t};}
 function think(room,p){const brain=p.brain,c=G.CLASSES[p.classId];
  const opponents=[...room.players.values(),...room.decoys.filter(d=>d.life>0)].filter(e=>e.id!==p.id&&e.owner!==p.id&&e.connected!==false&&!e.dead&&G.enemy(room,p,e)&&(e.invis||0)<=0 ).sort((a,b)=>dist(p,a)-dist(p,b));const seen=opponents.filter(e=>clear(room,p,e,3));let pursuit=opponents.find(e=>e.id===brain.pursuit);if(!pursuit||opponents[0]&&dist(p,opponents[0])<dist(p,pursuit)*.65)pursuit=opponents[0];brain.pursuit=pursuit?.id;const target=pursuit&&seen.includes(pursuit)?pursuit:null;
@@ -32,6 +32,7 @@ function think(room,p){const brain=p.brain,c=G.CLASSES[p.classId];
  // Replan stalled routes and keep each waypoint reachable from the actual position.
  if(!brain.progress||dist(p,brain.progress)>22){brain.progress={x:p.x,y:p.y};brain.progressAt=room.time;}
  const stuck=room.time-(brain.progressAt||0)>.8;
+ if(brain.navRevision!==room.map.revision){brain.navRevision=room.map.revision;brain.pathAt=0;}
  if(stuck){brain.pathAt=0;brain.strafe=-(brain.strafe||1);brain.progressAt=room.time;}
  let waypoint=goal;if(!clear(room,p,goal)){
  if(room.time>=brain.pathAt||!brain.goal||dist(brain.goal,goal)>90||brain.path?.length&&!clear(room,p,brain.path[0],17)){brain.path=path(room,p,goal);brain.pathAt=room.time+.65;brain.goal={x:goal.x,y:goal.y};}
@@ -46,11 +47,12 @@ function think(room,p){const brain=p.brain,c=G.CLASSES[p.classId];
  mx=best.x;my=best.y;brain.moveOrigin={x:p.x,y:p.y};brain.moveBudget=Math.min(50,len>5?len:50);const d=target?dist(p,target):Infinity;
  let aim=p.a;if(target){const point=intercept(p,target,p.buffs.launcher>0?470:c.bulletSpeed||720);aim=Math.atan2(point.y-p.y,point.x-p.x)+(room.random()-.5)*.18;}else if(mx||my)aim=Math.atan2(my,mx);
  p.a=aim;p.input={x:mx,y:my,a:aim,fire:!!target&&d<(c.bulletSpeed||720)*(c.bulletLife||.85)+20&&clear(room,p,target,4)};
+ if(p.tether){p.input.a=Math.atan2(p.tether.y-p.y,p.tether.x-p.x);p.input.fire=true;p.a=p.input.a;}
  const threatened=danger(room,p,p)>130;
  if((threatened||room.mode==='flag'&&room.flag.owner===p.id&&target)&&p.cds[0]<=0&&p.classId!=='mage'){const a=p.a;p.a=Math.atan2(my,mx);G.skill(room,p,0);p.a=a;}
  if(p.classId==='mage'&&p.cds[0]<=0&&(threatened||target&&p.hp<p.maxHp*.4)){const q=flee(room,p,seen);G.skill(room,p,0,q);}
- if(target){const id=p.classId;const useE=id==='mage'?d<900:id==='guardian'?p.shield<=0:id==='bomber'?d<260:id==='assassin'?p.hp<p.maxHp*.7:true;if(useE)G.skill(room,p,1);
- const ranges={guardian:160,assault:250,bomber:340,scout:950,ricochet:950,mage:740,assassin:380,jester:580};if(p.invis<=0&&d<ranges[id]&&clear(room,p,target,4)){const speeds={bomber:460,scout:1120,ricochet:1000,mage:640,assassin:1050,jester:720},point=intercept(p,target,speeds[id]||720);p.a=Math.atan2(point.y-p.y,point.x-p.x)+(room.random()-.5)*.14;G.skill(room,p,2);p.a=aim;}}
+ if(target){const id=p.classId;if(id==='trapper'){const point=intercept(p,target,800);p.a=Math.atan2(point.y-p.y,point.x-p.x);}const useE=id==='trapper'?d<520:id==='mage'?d<900:id==='guardian'?p.shield<=0:id==='bomber'?d<260:id==='assassin'?p.hp<p.maxHp*.7:true;if(useE)G.skill(room,p,1);
+ const ranges={trapper:580,guardian:160,assault:250,bomber:340,scout:950,ricochet:950,mage:740,assassin:380,jester:580};if(p.invis<=0&&d<ranges[id]&&clear(room,p,target,4)){const speeds={trapper:600,bomber:460,scout:1120,ricochet:1000,mage:640,assassin:1050,jester:720},point=intercept(p,target,speeds[id]||720);p.a=Math.atan2(point.y-p.y,point.x-p.x)+(room.random()-.5)*.14;G.skill(room,p,2);p.a=aim;}}
 }
 function updateBots(room,dt){if(room.match.status!=='playing')return;for(const p of room.players.values()){if(!p.bot||!p.connected||p.dead)continue;if(!p.brain||p.brain.round!==room.match.round)p.brain={round:room.match.round,next:room.time+room.random()*.15,pathAt:0,strafe:room.random()<.5?-1:1};// Never hold an old steering command past its checked segment or waypoint.
  if(p.brain.moveOrigin&&dist(p,p.brain.moveOrigin)>=p.brain.moveBudget-8)p.brain.next=0;

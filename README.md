@@ -1,4 +1,4 @@
-# Arena Savaşı · 3.7.2
+# Arena Savaşı · 3.8.0
 
 Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme ve oyuncu hesabı gerekmez.
 
@@ -50,7 +50,7 @@ Hedef tamamlanınca kazanan ve sonuç tablosu gösterilir. Bağlı herkes **Röv
 
 Sınıf kartlarında buffsız temel mermi hasarı, mermi hızı, atış aralığı, saniyedeki atış sayısı, hareket hızı ve mermi ömrü gösterilir. Q/E/R açıklamaları hasar, süre, menzil ve bekleme bilgilerini içerir. Çoklu atış toplamı bütün mermilerin isabet etmesi içindir.
 
-## Sekiz sınıf
+## Dokuz sınıf
 
 Parantezler bekleme süresidir; etkilerin süresiyle aynı değildir.
 
@@ -63,6 +63,7 @@ Parantezler bekleme süresidir; etkilerin süresiyle aynı değildir.
 | ⚔ Akıncı | 100 | Atılma (4 sn) | Seri Tetik (11 sn) | İtici Darbe (16 sn) |
 | 🏹 İzci | 85 | Uzun Atılma (5 sn) | Adrenalin (12 sn) | Üçlü Keskin Atış (17 sn) |
 | 🛡 Muhafız | 145 | Hücum (6 sn) | Kale · 5 sn (14 sn) | Yer Sarsıntısı (18 sn) |
+| ⚓ Zincirci | 115 | Kayarak Kaçış (6 sn) | Çelik Kanca (12 sn) | Çapa Ağı (22 sn) |
 | 💣 Bombacı | 105 | Kaçış Atılması (5 sn) | Kara Mayını (10 sn) | Bomba Salvosu (17 sn) |
 
 - **Sekici:** Hızlı mermiler 3 kez seker ve uzun yaşar. E: 4 saniye daha fazla sekme. R: beşli seken yaylım.
@@ -86,6 +87,12 @@ Bütün seçenekler kozmetiktir: hasar, hız, menzil ve çarpışma alanını de
 - **6 silah görünümü:** Klasik, Neon Ray, Altın İşçilik, Şeker Kamışı, Kozmik ve Buz Kristali. Silah rengi karakter renginden ayrı seçilir (10 renk).
 
 Gökkuşağı Unicorn başlığı beyaz kulaklı bir başlık, renkli yele ve gökkuşağı çizgili tek boynuz içerir. Lobi önizlemesi seçimleri gösterir. Görünüm bu tarayıcıda kaydedilir. **Hafif efekt** ayarında hareket izleri çizilmez ve parçacıklar azaltılır; oyun kuralları aynıdır.
+
+## Canlı arena mekanikleri
+
+Yalnızca Normal Arena'da iki duvar 45 birimlik hat üzerinde hareket eder. Turkuaz çerçeveli geçit 6 saniye kapalı, 6 saniye açık kalır; son 1,5 saniyede uyarır. İçinde oyuncu varsa kapanmayı erteler. Kırılgan zemin üzerine basınca 1,2 saniye çatlar, 5 saniye çökmüş kalır; düşen oyuncu 35 hasar alır ve güvenli yere taşınır. Duvarlar ve geçitler herkes için aynı sunucu geometrisini kullanır; bot rotaları değişikliklerde yenilenir.
+
+**Zincirci:** E kancasının kalın ucu 18 hasar verir, ilk rakibi duvarlardan geçirmeden önüne çeker. R ağı 12 hasar verir ve 8 saniyelik duvar bağı kurar. Bağlı oyuncu çember içinde serbesttir; halata doğru 5 ayrı mermi isabeti bağı koparır. Hareketli duvara bağlı çapa duvarı takip eder; bağlı geçit açılırsa ip çözülür. Ölüm, rövanş ve süre dolması da bağı temizler. Silah buffları kanca/ağın menzilini veya kalınlığını artırmaz.
 
 ## Sana özel beş harita görünümü
 
