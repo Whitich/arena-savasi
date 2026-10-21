@@ -1,8 +1,8 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
-const Game=require('./game-core.js');
-const VERSION='3.6.3';
+const Game=require('./game-core.js'),Bots=require('./bot-ai.cjs');
+const VERSION='3.7.0';
 function createArenaServer(options={}){
  const rooms=new Map(),sessions=new Map();
  const server=http.createServer((req,res)=>{
@@ -20,7 +20,7 @@ function createArenaServer(options={}){
  function error(ws,message,code='INVALID'){send(ws,{t:'error',message,code});}
  function generatedCode(){return crypto.randomBytes(4).toString('hex').slice(0,6).toUpperCase();}
  function newRoom(code,mode){const r=Game.createRoom(code,mode,code+'-'+crypto.randomBytes(4).toString('hex'));rooms.set(code,r);return r;}
- function welcome(ws,r,p,token){send(ws,{t:'welcome',release:VERSION,id:p.id,token,code:r.code,mode:r.mode,map:{walls:r.map.walls,barrels:r.map.barrels.map(({id,x,y})=>({id,x,y})),hazards:r.map.hazards},state:Game.snapshot(r,p.id)});}
+ function welcome(ws,r,p,token){send(ws,{t:'welcome',release:VERSION,id:p.id,token,code:r.code,mode:r.mode,botCount:r.botCount||0,map:{walls:r.map.walls,barrels:r.map.barrels.map(({id,x,y})=>({id,x,y})),hazards:r.map.hazards},state:Game.snapshot(r,p.id)});}
  function disconnect(ws){const r=ws.room,p=ws.player;if(!r||!p||p.ws!==ws)return;p.connected=false;p.disconnectedAt=Date.now();p.input={x:0,y:0,a:p.a,fire:false};p.ws=null;Game.dropFlag(r,p,null);broadcast(r,{t:'leave',id:p.id,name:p.name});ws.room=null;ws.player=null;}
  wss.on('connection',ws=>{
   if(wss.clients.size>256){ws.close(1013,'Server full');return;}
@@ -34,6 +34,8 @@ function createArenaServer(options={}){
      if(ws.player)return;
      let code=String(o.code||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8),r;
      if(o.t==='create'){
+      if(!Object.hasOwn(Game.CLASSES,o.classId))return error(ws,'Bir sınıf seç.');
+      if(o.botsEnabled===true&&(!Number.isInteger(o.botCount)||o.botCount<1||o.botCount>8))return error(ws,'Bot sayısı 1 ile 8 arasında olmalı.');
       if(!Game.MODES[o.mode])return error(ws,'Geçerli bir oyun modu seç.');
       if(!code){do{code=generatedCode();}while(rooms.has(code));}
       if(rooms.has(code))return error(ws,'Bu oda kodu kullanımda. Başka kod seç veya odaya katıl.','EXISTS');
@@ -48,11 +50,12 @@ function createArenaServer(options={}){
      const session=typeof o.token==='string'?sessions.get(o.token):null;
      if(session&&session.code===code){p=r.players.get(session.id);if(p?.connected)return error(ws,'Bu oyuncu başka sekmede zaten bağlı.');if(p){token=o.token;p.connected=true;p.ws=ws;p.input={x:0,y:0,a:p.a,fire:false};p.disconnectedAt=0;}}
      if(!p){
-      const active=[...r.players.values()].filter(p=>p.connected).length;if(active>=16)return error(ws,'Oda dolu (16 oyuncu).');
-      if(!Game.CLASSES[o.classId])return error(ws,'Bir sınıf seç.');
+      if(!Object.hasOwn(Game.CLASSES,o.classId))return error(ws,'Bir sınıf seç.');
+      let active=[...r.players.values()].filter(p=>p.connected).length;if(active>=16){const bot=[...r.players.values()].find(p=>p.bot);if(bot){Game.dropFlag(r,bot,null);r.players.delete(bot.id);r.bullets=r.bullets.filter(b=>b.owner!==bot.id);r.mines=r.mines.filter(b=>b.owner!==bot.id);r.decoys=r.decoys.filter(b=>b.owner!==bot.id);r.botCount--;active--;}else return error(ws,'Oda dolu (16 oyuncu).');}
       p=Game.addPlayer(r,crypto.randomUUID(),o.name,o.classId,o.cosmetics);p.ws=ws;p.invuln=1;p.lastInputAt=now;
       token=crypto.randomBytes(24).toString('hex');sessions.set(token,{id:p.id,code});p.token=token;
      }
+     if(o.t==='create'&&o.botsEnabled===true)Bots.addBots(r,o.botCount);
      if(o.cosmetics)p.cosmetics=Game.normalizeCosmetics(o.cosmetics,p.id);
      ws.room=r;ws.player=p;r.emptyAt=0;clearTimeout(ws.joinTimer);welcome(ws,r,p,token);broadcast(r,{t:'joined',id:p.id,name:p.name});return;
     }
@@ -76,14 +79,14 @@ function createArenaServer(options={}){
   const now=Date.now();acc+=Math.min(.2,(now-last)/1000);last=now;
   while(acc>=.025){acc-=.025;publish+=.025;
    for(const r of rooms.values()){
-    const active=[...r.players.values()].some(p=>p.connected);
+    const active=[...r.players.values()].some(p=>p.connected&&!p.bot);
     for(const p of r.players.values())if(!p.connected&&now-p.disconnectedAt>30000){sessions.delete(p.token);r.players.delete(p.id);r.mines=r.mines.filter(m=>m.owner!==p.id);r.bullets=r.bullets.filter(b=>b.owner!==p.id);}
     if(!active){if(!r.emptyAt)r.emptyAt=now;if(now-r.emptyAt>300000){for(const p of r.players.values())sessions.delete(p.token);rooms.delete(r.code);}continue;}
-    for(const p of r.players.values())if(now-(p.lastInputAt||0)>450)p.input={x:0,y:0,a:p.a,fire:false};
-    Game.step(r,.025);
+    for(const p of r.players.values())if(!p.bot&&now-(p.lastInputAt||0)>450)p.input={x:0,y:0,a:p.a,fire:false};
+    Bots.updateBots(r,.025);Game.step(r,.025);
     if(r.events.length){broadcast(r,{t:'events',events:r.events.splice(0,200)});r.events.length=0;}
    }
-   if(publish>=.05){publish=0;for(const r of rooms.values())if([...r.players.values()].some(p=>p.connected))for(const p of r.players.values())if(p.connected)send(p.ws,Game.snapshot(r,p.id),true);}
+   if(publish>=.05){publish=0;for(const r of rooms.values())if([...r.players.values()].some(p=>p.connected))for(const p of r.players.values())if(p.connected&&!p.bot)send(p.ws,Game.snapshot(r,p.id),true);}
   }
  },25);tick.unref();
  const heartbeat=setInterval(()=>{for(const ws of wss.clients){if(!ws.alive){ws.terminate();continue;}ws.alive=false;ws.ping();}},10000);heartbeat.unref();

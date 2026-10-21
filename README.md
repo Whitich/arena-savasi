@@ -1,4 +1,4 @@
-# Arena Savaşı · 3.6.3
+# Arena Savaşı · 3.7.0
 
 Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme ve oyuncu hesabı gerekmez.
 
@@ -10,7 +10,7 @@ Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme v
 2. **Oda oluştur** sekmesinde mod seç. Oda kodunu boş bırakırsan otomatik üretilir.
 3. **Oda linkini kopyala** düğmesiyle arkadaşlarını çağır. Link veya kodla katılanlar odanın seçili moduna girer.
 
-Oda kapasitesi 16 oyuncudur. Oda kodu parola değildir.
+Oda kapasitesi insan ve bot toplamı 16 oyuncudur. Her modun yanında varsayılanı **Hayır** olan **Bot eklensin mi?** seçeneği bulunur. **Evet** seçilince 1–8 bot seçilebilir. Botlar yalnızca oda kurulurken eklenir; katılan oyuncu sayıyı değiştiremez. Dolu odaya insan katılırsa bir bot yer açar. Oda kodu parola değildir.
 
 ## Oyun modları ve kazanma hedefleri
 
@@ -25,6 +25,17 @@ Oda kapasitesi 16 oyuncudur. Oda kodu parola değildir.
 Alan her 15 saniyede taşınır. Tehlikeler yalnızca Normal Arena'dadır. Metal testereler dönüş izi, mekanik taretler atışta namlu parlaması gösterir. Lav aktifleşmeden önce ısınma uyarısı verir; kızgın çatlaklar ve korlar aktif bölgeyi belirginleştirir. Bu görseller hasarı veya tehlike sürelerini değiştirmez. Takımlı modlarda ölüm ekranından sınıf değiştirilebilir; yeniden doğuş 5 saniyedir. Diğer modlarda 3 saniyedir.
 
 Hedef tamamlanınca kazanan ve sonuç tablosu gösterilir. Bağlı herkes **Rövanşa Hazırım** dediğinde aynı odada yeni tur başlar. Skor, can, buff ve yetenek beklemeleri sıfırlanır; görünüm ve oyuncu kimliği korunur.
+
+## Sunucuda çalışan botlar
+
+- **Normal Arena / Takım Ölüm Maçı:** rakibi bulur, savaşır; takım arkadaşına saldırmaz.
+- **Bayrak Taşıma:** yerdeki bayrağı almaya, taşıyıcıyı kovalamaya ve bayrak kendisindeyken rakipten uzaklaşmaya çalışır.
+- **Alan Hakimiyeti (tekli/takımlı):** hareket eden alanı takip eder, içeride kalıp rakiple savaşır.
+- Hareketli hedefin hızından mermi kesişme noktasını hesaplar; önleme atışında küçük nişan sapması ve yaklaşık 0,14–0,18 saniye karar aralığı vardır.
+- Engellerden A* yol bulma ile dolaşır. Yakınındaki buffları ana hedeften fazla sapmadan toplar; canı azsa iyileşmeye öncelik verir.
+- Yakındaki rakip/taret mermilerine karşı kısa adımları değerlendirir; testere, ısınan lav ve aktif lavdan kaçınmaya çalışır. Kusursuz kaçış garantisi yoktur.
+- Aynı can, silah, hasar ve yetenek kuralları geçerlidir. Duvar arkasını veya görünmez rakibi nişan hedefi olarak kullanmaz. Bot isimleri **BOT** ile başlar.
+- Rövanşta sadece bağlı insanlardan hazır oyu beklenir. Odada insan kalmazsa bot simülasyonu durur; oda normal boş oda süresiyle temizlenir.
 
 ## Kontroller
 
@@ -159,6 +170,7 @@ npm test
 - **client.js:** çizim, sesler, kişisel ayarlar, giriş ve ağ istemcisi.
 - **game-core.js:** ortak tanımlar ve sunucunun işlettiği oyun simülasyonu.
 - **server.cjs:** HTTP/WebSocket, odalar ve oturumlar.
+- **bot-ai.cjs:** hedefe göre karar, önleme atışı, A* yol bulma ve kaçınma.
 - **render.yaml:** Render dağıtım tanımı.
 
 Oyun ve WebSocket sunucusu aynı Render hizmetinde çalışır. GitHub Pages istemcisi de canlı sunucuya bağlanır. Bu kurulumda güncellemeden sonra Render'da **Manual Deploy → Deploy latest commit** kullanılır. **/health** içindeki release sürümü ve version commit'i yayın kontrolü için kullanılır. Açık oyun sekmelerini yeni yayından sonra Ctrl+F5 ile yenile.

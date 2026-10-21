@@ -262,7 +262,7 @@ function moveZone(room){
 function step(room,dt){
  if(room.match.status==='finished'){
   room.match.intermission+=dt;
-  const active=[...room.players.values()].filter(p=>p.connected);
+  const active=[...room.players.values()].filter(p=>p.connected&&!p.bot);
   if(room.match.intermission>=3&&active.length&&active.every(p=>room.match.ready.has(p.id)))restartMatch(room);
   return;
  }
@@ -336,12 +336,12 @@ function step(room,dt){
 const round=n=>Math.round(n*10)/10;
 function snapshot(room,viewerId=null){
  const viewer=room.players.get(viewerId);
- const serialize=p=>({id:p.id,name:p.name,cosmetics:p.cosmetics,classId:p.classId,team:p.team,x:round(p.x),y:round(p.y),a:Math.round(p.a*1000)/1000,vx:round(p.vx||0),vy:round(p.vy||0),hp:round(p.hp),maxHp:p.maxHp,score:p.score,kills:p.kills,deaths:p.deaths,dead:!!p.dead,respawn:round(p.respawn||0),connected:p.connected!==false,cds:(p.cds||[0,0,0]).map(round),shield:round(p.shield||0),shieldMax:p.shieldMax||0,shieldTime:round(p.shieldTime||0),invuln:round(p.invuln||0),invis:p.id===viewerId||!enemy(room,viewer,p)?round(p.invis||0):0,ultShots:p.ultShots??3,nextClass:p.nextClass||null,ricochetBoost:round(p.ricochetBoost||0),dash:round(p.dash||0),haste:round(p.haste||0),root:round(p.root||0),overdrive:round(p.overdrive||0),slow:round(p.slow||0),buffs:Object.fromEntries(Object.entries(p.buffs||{}).map(([k,v])=>[k,round(v)]))});
+ const serialize=p=>({bot:!!p.bot,id:p.id,name:p.name,cosmetics:p.cosmetics,classId:p.classId,team:p.team,x:round(p.x),y:round(p.y),a:Math.round(p.a*1000)/1000,vx:round(p.vx||0),vy:round(p.vy||0),hp:round(p.hp),maxHp:p.maxHp,score:p.score,kills:p.kills,deaths:p.deaths,dead:!!p.dead,respawn:round(p.respawn||0),connected:p.connected!==false,cds:(p.cds||[0,0,0]).map(round),shield:round(p.shield||0),shieldMax:p.shieldMax||0,shieldTime:round(p.shieldTime||0),invuln:round(p.invuln||0),invis:p.id===viewerId||!enemy(room,viewer,p)?round(p.invis||0):0,ultShots:p.ultShots??3,nextClass:p.nextClass||null,ricochetBoost:round(p.ricochetBoost||0),dash:round(p.dash||0),haste:round(p.haste||0),root:round(p.root||0),overdrive:round(p.overdrive||0),slow:round(p.slow||0),buffs:Object.fromEntries(Object.entries(p.buffs||{}).map(([k,v])=>[k,round(v)]))});
  const visible=[...room.players.values()].filter(p=>p.invis<=0||p.id===viewerId||!enemy(room,viewer,p)||room.flag.owner===p.id).map(serialize);
  for(const d of room.decoys)if(d.life>0){const copy=serialize(d);if(viewerId===d.owner||!enemy(room,viewer,d))copy.allyDecoy=true;visible.push(copy);}
- const active=[...room.players.values()].filter(p=>p.connected);
+ const active=[...room.players.values()].filter(p=>p.connected&&!p.bot);
  return{t:'state',match:{round:room.match.round,status:room.match.status,target:room.match.target,winner:room.match.winner,results:room.match.results,finishedAt:round(room.match.finishedAt),ready:room.match.ready.has(viewerId),readyCount:active.filter(p=>room.match.ready.has(p.id)).length,required:active.length},time:Math.round(room.time*100)/100,mode:room.mode,teamScores:room.teamScores,flag:room.mode==='flag'?room.flag:null,zone:(room.mode==='zone'||room.mode==='zoneTeam')?room.zone:null,
- roster:[...room.players.values()].map(p=>({id:p.id,name:p.name,cosmetics:p.cosmetics,classId:p.classId,team:p.team,score:p.score,kills:p.kills,connected:p.connected})),players:visible,
+ roster:[...room.players.values()].map(p=>({bot:!!p.bot,id:p.id,name:p.name,cosmetics:p.cosmetics,classId:p.classId,team:p.team,score:p.score,kills:p.kills,connected:p.connected})),players:visible,
  bullets:room.bullets.map(b=>({id:b.id,owner:b.owner,x:round(b.x),y:round(b.y),vx:round(b.vx),vy:round(b.vy),bomb:b.bomb,kind:b.kind,color:b.color})),
  barrels:room.map.barrels.map(b=>({id:b.id,hp:b.hp,respawn:round(b.respawn)})),buffs:room.buffs,mines:room.mines,
  hazards:room.map.hazards.map(h=>({id:h.id,type:h.type,x:round(h.x),y:round(h.y),angle:Math.round((h.angle||0)*1000)/1000,active:h.active||false,warning:h.type==='lava'&&!h.active&&(room.time+h.phase)%7>3.6}))};

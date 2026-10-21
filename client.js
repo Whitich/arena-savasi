@@ -10,6 +10,7 @@ if(Object.values(bindings).some(v=>typeof v!=='string')||new Set(Object.values(b
 let selectedClass=store.get('arena_class','assault');if(!CLASSES[selectedClass])selectedClass='assault';
 let cosmetics=G.normalizeCosmetics(store.get('arena_cosmetics_v1',{color:Object.keys(G.COSMETICS.colors)[Math.floor(Math.random()*10)]}));
 store.set('arena_cosmetics_v1',cosmetics);
+const botSettings=Object.fromEntries(Object.keys(MODES).map(id=>[id,{enabled:false,count:3}]));
 let selectedMode='normal',lobbyAction=location.hash.length>1?'join':'create',bindingAction=null;
 let ws=null,playing=false,connecting=false,intentional=false,retryTimer=null,retryCount=0;
 let myId=null,roomCode='',roomMode='normal',token=null,map={walls:[],barrels:[],hazards:[]},world=null;
@@ -78,13 +79,14 @@ function renderLobby(){
  $('room').placeholder=lobbyAction==='create'?'Boş bırakırsan otomatik oluşturulur':'Örn: ARENA';
  $('start').textContent=connecting?'BAĞLANIYOR…':lobbyAction==='create'?'ODAYI OLUŞTUR':'ODAYA KATIL';$('start').disabled=connecting;
  $('roomHint').textContent=lobbyAction==='create'?'Oda kurulduktan sonra linki arkadaşlarınla paylaş. Katılan herkes seçtiğin oyun moduna girer.':'Oyun modu odayı kuran kişi tarafından belirlenir. Sınıfını seçip oda koduyla katıl.';
- $('modeList').innerHTML=Object.entries(MODES).map(([id,m])=>`<button class="mode ${id===selectedMode?'selected':''}" data-mode="${id}" aria-pressed="${id===selectedMode}"><strong>${m.name}</strong><small>${m.description} · Hedef: ${m.target} ${m.unit}</small></button>`).join('');
+ $('modeList').innerHTML=Object.entries(MODES).map(([id,m])=>`<div class="mode-wrap ${id===selectedMode?'selected':''}"><button class="mode ${id===selectedMode?'selected':''}" data-mode="${id}" aria-pressed="${id===selectedMode}"><strong>${m.name}</strong><small>${m.description} · Hedef: ${m.target} ${m.unit}</small></button><div class="bot-options"><label>Bot eklensin mi?<select data-bots="${id}" aria-label="${m.name}: Bot eklensin mi?"><option value="no" ${!botSettings[id].enabled?'selected':''}>Hayır</option><option value="yes" ${botSettings[id].enabled?'selected':''}>Evet</option></select></label>${botSettings[id].enabled?`<label>Kaç bot?<select data-bot-count="${id}" aria-label="${m.name}: Bot sayısı">${Array.from({length:8},(_,i)=>`<option value="${i+1}" ${botSettings[id].count===i+1?'selected':''}>${i+1} bot</option>`).join('')}</select></label>`:''}</div></div>`).join('');
  const num=n=>Number(n).toLocaleString('tr-TR',{maximumFractionDigits:2});
  $('classList').innerHTML=Object.entries(CLASSES).map(([id,c])=>`<button class="class-card ${id===selectedClass?'selected':''}" style="--class-color:${c.color}" data-class="${id}" aria-pressed="${id===selectedClass}"><span class="class-top"><span><strong>${c.name}</strong>${id===selectedClass?'<span class="selected-mark">SEÇİLDİ</span>':''}</span><span class="class-icon">${c.icon}</span></span><span class="class-stats"><span><b>${c.hp}</b> CAN</span><span><b>${c.damage}</b> HASAR / MERMİ</span><span><b>${num(c.interval)} sn</b> ATIŞ ARALIĞI</span><span><b>${c.bulletSpeed||720}</b> MERMİ HIZI</span><span><b>${c.speed}</b> HAREKET HIZI</span><span><b>${num(1/c.interval)}</b> ATIŞ / SN</span></span><span class="weapon-note">Hızlar: birim/sn · Mermi ömrü: ${num(c.bulletLife||.85)} sn${c.bounces?' · '+c.bounces+' sekme':''}</span><span class="class-skill-list">${c.skills.map((s,i)=>`<span class="class-skill-row"><span class="skill-row-head"><b>${keyLabel(bindings['skill'+(i+1)])} · ${s.name}</b><em>${num(s.cd)} sn bekleme</em></span><span>${s.detail}</span></span>`).join('')}</span></button>`).join('');
  $('skillPreview').innerHTML=CLASSES[selectedClass].skills.map((s,i)=>`<div class="preview"><span class="key">${keyLabel(bindings['skill'+(i+1)])}</span><strong>${s.icon} ${s.name}</strong><p>${s.detail}</p><span class="skill-wait">Bekleme: ${num(s.cd)} saniye</span></div>`).join('');
  $('controlsSummary').textContent=`${['up','left','down','right'].map(k=>keyLabel(bindings[k])).join(' / ')}: hareket · Sol tık / ${keyLabel(bindings.fire)}: ateş · ${keyLabel(bindings.mute)}: ses`;
 }
 $('classList').onclick=e=>{const b=e.target.closest('[data-class]');if(!b)return;selectedClass=b.dataset.class;store.set('arena_class',selectedClass);renderLobby();};
+$('modeList').onchange=e=>{const id=e.target.dataset.bots||e.target.dataset.botCount;if(!id)return;if(e.target.dataset.bots)botSettings[id].enabled=e.target.value==='yes';else botSettings[id].count=Number(e.target.value);selectedMode=id;renderLobby();};
 $('modeList').onclick=e=>{const b=e.target.closest('[data-mode]');if(!b)return;selectedMode=b.dataset.mode;renderLobby();};
 $('createTab').onclick=()=>{lobbyAction='create';showError('');renderLobby();};$('joinTab').onclick=()=>{lobbyAction='join';showError('');renderLobby();};
 function renderBindings(){
@@ -188,7 +190,7 @@ function start(){
  const code=$('room').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);if(lobbyAction==='join'&&!code){showError('Katılacağın odanın kodunu yaz.');return;}
  const name=$('name').value.trim().slice(0,14)||'Oyuncu';$('name').value=name;store.set('arena_name',name);
  const previous=lobbyAction==='join'?sessionRead(code):null;
- connectRoom({t:lobbyAction,code,name,classId:selectedClass,cosmetics,mode:selectedMode,token:previous?.classId===selectedClass?previous.token:undefined});
+ connectRoom({t:lobbyAction,code,name,classId:selectedClass,cosmetics,mode:selectedMode,botsEnabled:botSettings[selectedMode].enabled,botCount:botSettings[selectedMode].count,token:previous?.classId===selectedClass?previous.token:undefined});
 }
 $('start').onclick=start;for(const id of ['name','room'])$(id).addEventListener('keydown',e=>{if(e.key==='Enter')start();});
 $('name').value=store.get('arena_name','');$('room').value=location.hash.slice(1).replace(/[^A-Za-z0-9]/g,'').toUpperCase().slice(0,8);
@@ -405,7 +407,7 @@ function updateHUD(){
  const me=localPlayer();if(!me||!world)return;updateMatchEnd(me);
  const critical=!me.dead&&me.hp/me.maxHp<=.25&&world.match?.status!=='finished';$('lowHealth').classList.toggle('hidden',!critical);$('hpwrap').classList.toggle('critical',critical);if(critical&&!criticalActive)sound('warning');criticalActive=critical;
  $('matchGoal').textContent='Hedef: '+(world.match?.target||MODES[roomMode].target)+' '+MODES[roomMode].unit;
- $('count').textContent='Oyuncu: '+(world.roster||[...players.values()]).filter(p=>p.connected).length;$('roompill').textContent='Oda: '+roomCode;
+ const roster=world.roster||[...players.values()];$('count').textContent='Oyuncu: '+roster.filter(p=>p.connected&&!p.bot).length+' · Bot: '+roster.filter(p=>p.connected&&p.bot).length;$('roompill').textContent='Oda: '+roomCode;
  $('ping').textContent=`Ping: ${ping===null?'–':Math.round(ping)+' ms'} · ${Math.round(1000/Math.max(1,frameMs))} FPS`;
  $('hpbar').style.width=clamp(me.hp/me.maxHp*100,0,100)+'%';$('hptext').textContent=Math.ceil(me.hp)+' / '+me.maxHp+(me.shield>0?' · 🛡 '+Math.ceil(me.shield)+' · '+(me.shieldTime||0).toFixed(1)+'sn':'');$('shieldbar').style.width=clamp(me.shield/(me.shieldMax||120)*100,0,100)+'%';$('shieldwrap').classList.toggle('hidden',me.shield<=0);
  $('classPill').textContent=CLASSES[me.classId].name+(me.invis>0?' · GİZLİ':me.ricochetBoost>0?' · Sekme Ustası '+Math.ceil(me.ricochetBoost)+'s':'')+(G.isTeamMode(roomMode)?' · '+(me.team===0?'Kırmızı takım':'Mavi takım'):'');

@@ -34,7 +34,7 @@ test('resume token restores own player, copied id cannot impersonate and rooms r
 test('static assets and deployment health are served',async t=>{
  const app=await fixture(t),base='http://127.0.0.1:'+app.server.address().port;
  for(const file of ['/','/client.js','/game-core.js','/server-config.js'])assert.equal((await fetch(base+file)).status,200);
- assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'3.6.3');assert.equal((await fetch(base+'/server.cjs')).status,404);
+ assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'3.7.0');assert.equal((await fetch(base+'/server.cjs')).status,404);
 });
 test('invisibility is filtered per real WebSocket recipient, then firing reveals the assassin',async t=>{
  const app=await fixture(t),a=await app.connect(),b=await app.connect();a.json(join('create','HIDDEN',{mode:'normal',classId:'assassin'}));const aw=await packet(a,o=>o.t==='welcome');b.json(join('join','HIDDEN'));await packet(b,o=>o.t==='welcome');
@@ -51,4 +51,15 @@ test('match winner and consent-based rematch are synchronized through WebSocket'
  for(const ws of [a,b]){const end=await packet(ws,o=>o.t==='state'&&o.match.status==='finished');assert.equal(end.match.winner.id,aw.id);assert.equal(end.match.target,30);}
  a.json({t:'rematch'});await packet(a,o=>o.t==='state'&&o.match.readyCount===1);require('../game-core.js').step(r,3.1);assert.equal(r.match.status,'finished');b.json({t:'rematch'});
  for(const ws of [a,b]){const next=await packet(ws,o=>o.t==='state'&&o.match.round===2);assert.equal(next.match.status,'playing');assert.ok(next.players.every(p=>p.score===0));}
+});
+test('bot choice defaults off, validates counts, stays immutable on join and consumes no session tokens',async t=>{
+ const app=await fixture(t),a=await app.connect();a.json(join('create','NOBOTS'));const no=await packet(a,o=>o.t==='welcome');assert.equal(no.botCount,0);assert.equal(no.state.roster.filter(p=>p.bot).length,0);
+ const bad=await app.connect();bad.json(join('create','BADBOT',{botsEnabled:true,botCount:999}));await packet(bad,o=>o.t==='error');assert.equal(app.rooms.has('BADBOT'),false);
+ const b=await app.connect();b.json(join('create','BOTS',{botsEnabled:true,botCount:3}));const bw=await packet(b,o=>o.t==='welcome');assert.equal(bw.botCount,3);assert.equal(bw.state.roster.filter(p=>p.bot).length,3);assert.equal(app.sessions.size,2);
+ const c=await app.connect();c.json(join('join','BOTS',{botsEnabled:true,botCount:8}));const cw=await packet(c,o=>o.t==='welcome');assert.equal(cw.botCount,3);assert.equal(cw.state.roster.filter(p=>p.bot).length,3);
+ const r=app.rooms.get('BOTS'),human=r.players.get(bw.id);b.close();c.close();await new Promise(r=>setTimeout(r,70));const time=r.time;await new Promise(r=>setTimeout(r,120));assert.equal(r.time,time);assert.equal(human.connected,false);
+});
+test('bots run real combat over WebSocket and yield a slot to a human when room is full',async t=>{
+ const app=await fixture(t),a=await app.connect();a.json(join('create','BOTFIGHT',{botsEnabled:true,botCount:1}));const aw=await packet(a,o=>o.t==='welcome'),r=app.rooms.get('BOTFIGHT'),G=require('../game-core.js'),human=r.players.get(aw.id),bot=[...r.players.values()].find(p=>p.bot);r.map={walls:[],barrels:[],hazards:[]};Object.assign(human,{x:700,y:500,invuln:0});Object.assign(bot,{x:400,y:500,invuln:0});await packet(a,o=>o.t==='state'&&o.players.find(p=>p.id===aw.id)?.hp<100);
+ for(let i=0;r.players.size<16;i++)G.addPlayer(r,'fill'+i,'Filler');const b=await app.connect();b.json(join('join','BOTFIGHT'));const bw=await packet(b,o=>o.t==='welcome');assert.equal(bw.botCount,0);assert.equal(bw.state.roster.filter(p=>p.connected).length,16);assert.equal(r.players.has(bot.id),false);
 });
