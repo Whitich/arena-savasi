@@ -1,4 +1,4 @@
-# Arena Savaşı · 3.8.0
+# Arena Savaşı · 3.8.1
 
 Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme ve oyuncu hesabı gerekmez.
 
@@ -90,9 +90,9 @@ Gökkuşağı Unicorn başlığı beyaz kulaklı bir başlık, renkli yele ve g�
 
 ## Canlı arena mekanikleri
 
-Yalnızca Normal Arena'da iki duvar 45 birimlik hat üzerinde hareket eder. Turkuaz çerçeveli geçit 6 saniye kapalı, 6 saniye açık kalır; son 1,5 saniyede uyarır. İçinde oyuncu varsa kapanmayı erteler. Kırılgan zemin üzerine basınca 1,2 saniye çatlar, 5 saniye çökmüş kalır; düşen oyuncu 35 hasar alır ve güvenli yere taşınır. Duvarlar ve geçitler herkes için aynı sunucu geometrisini kullanır; bot rotaları değişikliklerde yenilenir.
+Yalnızca Normal Arena'da iki duvar 45 birimlik hat üzerinde hareket eder. Haritanın iki ayrı ucunda eşleşmiş A/B portalları bulunur. Portalın içine girince eşine ışınlanırsın; otomatik geri dönmemek için çıkış halkasından ayrılıp yeniden girmek gerekir (1,25 saniye bekleme). Halatla bağlı veya kancayla çekilen oyuncu portalı kullanamaz. Botlar yolu kısaltıyorsa portalı kullanır. Portal, kırılgan zemin, lav, taret ve testereler ayrı güvenli alanlara yerleştirilir; testerenin bütün hareket hattı ve duvarın kayma payı hesaba katılır. Kırılgan zemin çerçeveli metal plakalardan oluşur, hasarlandıkça kızaran çatlaklar ve çökünce derinlik görünümü gösterir. Kırılgan zemin üzerine basınca 1,2 saniye çatlar, 5 saniye çökmüş kalır; düşen oyuncu 35 hasar alır ve güvenli yere taşınır. Duvarlar ve portallar herkes için aynı sunucu geometrisini kullanır; bot rotaları değişikliklerde yenilenir.
 
-**Zincirci:** E kancasının kalın ucu 18 hasar verir, ilk rakibi duvarlardan geçirmeden önüne çeker. R ağı 12 hasar verir ve 8 saniyelik duvar bağı kurar. Bağlı oyuncu çember içinde serbesttir; halata doğru 5 ayrı mermi isabeti bağı koparır. Hareketli duvara bağlı çapa duvarı takip eder; bağlı geçit açılırsa ip çözülür. Ölüm, rövanş ve süre dolması da bağı temizler. Silah buffları kanca/ağın menzilini veya kalınlığını artırmaz.
+**Zincirci:** E kancasının kalın ucu 18 hasar verir, ilk rakibi duvarlardan geçirmeden önüne çeker. R ağı 12 hasar verir ve 8 saniyelik duvar bağı kurar. Bağlı oyuncu çember içinde serbesttir; halata doğru 5 ayrı mermi isabeti bağı koparır. Hareketli duvara bağlı çapa duvarı takip eder; duvar kaldırılırsa ip çözülür. Ölüm, rövanş ve süre dolması da bağı temizler. Silah buffları kanca/ağın menzilini veya kalınlığını artırmaz.
 
 ## Sana özel beş harita görünümü
 

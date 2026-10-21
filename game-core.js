@@ -3,7 +3,7 @@
 const W=1600,H=1000,RAD=16;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const isTeamMode=mode=>mode==='tdm'||mode==='zoneTeam';
-const MODES={zoneTeam:{target:100,unit:'takım saniyesi',name:'Alan Hakimiyeti · Takımlı',description:'Kırmızı ve mavi · rakipsiz takım saniyede +1 puan · alan her 15 saniyede taşınır'},zone:{target:100,unit:'saniye',name:'Alan Hakimiyeti · Tekli',description:'Herkes tek · rakipsiz alanda saniyede +1 puan · alan her 15 saniyede taşınır'},normal:{target:30,unit:'öldürme',name:'Normal Arena',description:'Herkes tek · hareketli duvarlar, geçitler, kırılgan zemin ve arena tehlikeleri'},tdm:{target:50,unit:'takım öldürmesi',name:'Takım Ölüm Maçı',description:'Kırmızı ve mavi · ortak öldürme skoru · dost ateşi kapalı'},flag:{target:100,unit:'saniye',name:'Bayrak Taşıma',description:'Herkes tek · bayrak sende kaldıkça saniyede +1 puan'}};
+const MODES={zoneTeam:{target:100,unit:'takım saniyesi',name:'Alan Hakimiyeti · Takımlı',description:'Kırmızı ve mavi · rakipsiz takım saniyede +1 puan · alan her 15 saniyede taşınır'},zone:{target:100,unit:'saniye',name:'Alan Hakimiyeti · Tekli',description:'Herkes tek · rakipsiz alanda saniyede +1 puan · alan her 15 saniyede taşınır'},normal:{target:30,unit:'öldürme',name:'Normal Arena',description:'Herkes tek · hareketli duvarlar, iki uçlu portal, kırılgan zemin ve arena tehlikeleri'},tdm:{target:50,unit:'takım öldürmesi',name:'Takım Ölüm Maçı',description:'Kırmızı ve mavi · ortak öldürme skoru · dost ateşi kapalı'},flag:{target:100,unit:'saniye',name:'Bayrak Taşıma',description:'Herkes tek · bayrak sende kaldıkça saniyede +1 puan'}};
 const CLASSES={
  ricochet:{name:'Sekici',icon:'🔷',color:'#84cbff',hp:95,speed:255,damage:18,interval:.29,bulletSpeed:920,bulletLife:1.65,bounces:3,skills:[{name:'Kayarak Kaçış',icon:'💨',cd:5},{name:'Sekme Ustası',icon:'🔷',cd:12},{name:'Çapraz Yaylım',icon:'✳',cd:18}],description:'Hızlı mermiler 3 kez seker ve uzun yaşar. E: 4 saniye daha fazla sekme. R: beşli seken yaylım.'},
  mage:{name:'Büyücü',icon:'🔮',color:'#ca9aff',hp:90,speed:245,damage:23,interval:.28,bulletSpeed:680,skills:[{name:'Işınlanma',icon:'🌀',cd:14},{name:'Buz Mührü',icon:'❄',cd:12},{name:'Arkan Küre',icon:'☄',cd:7}],description:'Q: fareye doğru en fazla 380 birim ışınlanma; duvar içine girmez. E: uzun menzilli buz, 22 hasar ve 0,5 saniye sabitleme. R: delip geçen arkan küre (34 hasar).'},
@@ -81,26 +81,29 @@ function generateMap(seed,mode){
  walls.push({x:Math.round(x),y:Math.round(y),w,h});}
  const barrels=[];
  for(let i=0;i<7;i++){let pos;for(let k=0;k<200;k++){pos={x:100+random()*(W-200),y:100+random()*(H-200)};if(!inWall(walls,pos.x,pos.y,40)&&distance(pos,{x:800,y:500})>120&&barrels.every(b=>distance(b,pos)>100))break;}barrels.push({...pos,id:i,hp:50,respawn:0});}
- const hazards=[];
- if(mode==='normal'){
- const safe=(x,y)=>{for(let i=0;i<100;i++){if(!inWall(walls,x,y,75)&&barrels.every(b=>distance(b,{x,y})>80))return{x,y};x=180+random()*1240;y=160+random()*680;}return{x:800,y:500};};
- for(let i=0;i<2;i++){const p=safe(400+i*700,300+i*350);hazards.push({id:'s'+i,type:'saw',...p,baseX:p.x,baseY:p.y,phase:random()*6,axis:i,angle:0});}
- for(let i=0;i<2;i++)hazards.push({id:'t'+i,type:'turret',...safe(200+i*1200,200+i*600),angle:random()*6,next:1+i*.8});
- hazards.push({id:'lava',type:'lava',...safe(800,700),active:false,phase:random()*5});
- }
  walls.forEach((w,i)=>w.id='wall'+i);
- const floors=[];
+ const hazards=[],floors=[],portals=[];
  if(mode==='normal'){
-  if(walls[0])Object.assign(walls[0],{dynamic:'moving',baseX:walls[0].x,baseY:walls[0].y,axis:walls[0].w>walls[0].h?'y':'x'});
-  if(walls[2])Object.assign(walls[2],{dynamic:'moving',baseX:walls[2].x,baseY:walls[2].y,axis:walls[2].w>walls[2].h?'y':'x'});
-  if(walls[1])Object.assign(walls[1],{dynamic:'gate',open:false});
-  for(let i=0;i<2;i++)for(let n=0;n<100;n++){const f={id:'floor'+i,x:180+random()*1240,y:180+random()*640,r:55,state:'solid',timer:0};if(!inWall(walls,f.x,f.y,100)&&barrels.every(b=>distance(b,f)>100)&&floors.every(b=>distance(b,f)>180)){floors.push(f);break;}}
+  for(const i of [0,2])if(walls[i])Object.assign(walls[i],{dynamic:'moving',baseX:walls[i].x,baseY:walls[i].y,axis:walls[i].w>walls[i].h?'y':'x'});
+  // Reserve whole swept footprints, including saw travel and moving wall rails.
+  const occupied=walls.map(w=>({x:w.x-(w.dynamic==='moving'&&w.axis==='x'?45:0),y:w.y-(w.dynamic==='moving'&&w.axis==='y'?45:0),w:w.w+(w.dynamic==='moving'&&w.axis==='x'?90:0),h:w.h+(w.dynamic==='moving'&&w.axis==='y'?90:0)}));
+  for(const b of barrels)occupied.push({x:b.x-28,y:b.y-28,w:56,h:56});
+  const points=[];for(let y=100;y<=900;y+=65)for(let x=100;x<=1500;x+=65)points.push({x:x+(random()-.5)*12,y:y+(random()-.5)*12});
+  for(let i=points.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[points[i],points[j]]=[points[j],points[i]];}
+  function place(rx,ry,filter=()=>true){const p=points.find(p=>filter(p)&&p.x-rx>35&&p.x+rx<W-35&&p.y-ry>35&&p.y+ry<H-35&&occupied.every(o=>p.x+rx+20<o.x||p.x-rx-20>o.x+o.w||p.y+ry+20<o.y||p.y-ry-20>o.y+o.h));if(!p)return null;occupied.push({x:p.x-rx,y:p.y-ry,w:rx*2,h:ry*2});return{x:p.x,y:p.y};}
+  const pa=place(52,52,p=>p.x<500),pb=place(52,52,p=>p.x>1100);
+  if(pa&&pb)portals.push({id:'portalA',...pa,r:34,pair:'portalB',color:'#63e4f5'},{id:'portalB',...pb,r:34,pair:'portalA',color:'#bb91ff'});
+  for(let i=0;i<2;i++){const p=place(i===0?110:40,i===1?110:40);if(p)hazards.push({id:'s'+i,type:'saw',...p,baseX:p.x,baseY:p.y,phase:random()*6,axis:i,angle:0});}
+  for(let i=0;i<2;i++){const p=place(44,44);if(p)hazards.push({id:'t'+i,type:'turret',...p,angle:random()*6,next:1+i*.8});}
+  const lava=place(74,74);if(lava)hazards.push({id:'lava',type:'lava',...lava,active:false,phase:random()*5});
+  for(let i=0;i<2;i++){const p=place(63,63);if(p)floors.push({id:'floor'+i,...p,r:55,state:'solid',timer:0});}
  }
- return{walls,barrels,hazards,floors};
+ return{walls,barrels,hazards,floors,portals};
 }
 function safePosition(room,team=null){
  for(let i=0;i<300;i++){const x=team===0?70+room.random()*350:team===1?1180+room.random()*350:70+room.random()*1460,y=70+room.random()*860;
  if(inWall(room.map.walls,x,y,45)||room.map.barrels.some(b=>b.hp>0&&distance(b,{x,y})<60))continue;
+ if((room.map.portals||[]).some(q=>distance(q,{x,y})<q.r+45))continue;
  if((room.map.floors||[]).some(f=>distance(f,{x,y})<f.r+35))continue;
  if(room.map.hazards.some(h=>distance(h,{x,y})<(h.type==='saw'?155:90)))continue;
  if([...room.players.values()].some(p=>!p.dead&&p.connected&&distance(p,{x,y})<130))continue;
@@ -130,21 +133,21 @@ function restartMatch(room){
  for(const p of room.players.values())p.dead=true;
  for(const p of room.players.values()){
   if(p.nextClass)p.classId=p.nextClass;
-  Object.assign(p,{...safePosition(room,p.team),maxHp:CLASSES[p.classId].hp,hp:CLASSES[p.classId].hp,score:0,kills:0,deaths:0,dead:false,respawn:0,cds:[0,0,0],shotCd:0,shield:0,shieldMax:0,shieldTime:0,invuln:1,invis:0,ricochetBoost:0,ultShots:3,ultTap:0,nextClass:null,tether:null,pull:null,dash:0,haste:0,root:0,overdrive:0,slow:0,buffs:{},noHit:0,vx:0,vy:0,input:{x:0,y:0,a:p.a,fire:false}});
+  Object.assign(p,{...safePosition(room,p.team),maxHp:CLASSES[p.classId].hp,hp:CLASSES[p.classId].hp,score:0,kills:0,deaths:0,dead:false,respawn:0,cds:[0,0,0],shotCd:0,shield:0,shieldMax:0,shieldTime:0,invuln:1,invis:0,ricochetBoost:0,ultShots:3,ultTap:0,nextClass:null,tether:null,pull:null,portalLock:false,portalCd:0,dash:0,haste:0,root:0,overdrive:0,slow:0,buffs:{},noHit:0,vx:0,vy:0,input:{x:0,y:0,a:p.a,fire:false}});
  }
  emit(room,{t:'matchStart',round});
 }
 function addPlayer(room,id,name,classId='assault',cosmetics={}){
  const team=isTeamMode(room.mode)?([0,1].map(t=>[...room.players.values()].filter(p=>p.connected&&p.team===t).length).reduce((best,n,i,a)=>n<a[best]?i:best,0)):null;
  const c=CLASSES[classId]||CLASSES.assault;
- const p={id,cosmetics:normalizeCosmetics(cosmetics,id),name:String(name||'Oyuncu').slice(0,14),classId:CLASSES[classId]?classId:'assault',team,...safePosition(room,team),a:0,hp:c.hp,maxHp:c.hp,score:0,kills:0,deaths:0,dead:false,respawn:0,connected:true,input:{x:0,y:0,a:0,fire:false},cds:[0,0,0],shotCd:0,shield:0,shieldMax:0,shieldTime:0,invuln:0,invis:0,ricochetBoost:0,ultShots:3,ultTap:0,nextClass:null,tether:null,pull:null,dash:0,dashA:0,haste:0,root:0,overdrive:0,slow:0,buffs:{},noHit:0,vx:0,vy:0};
+ const p={id,cosmetics:normalizeCosmetics(cosmetics,id),name:String(name||'Oyuncu').slice(0,14),classId:CLASSES[classId]?classId:'assault',team,...safePosition(room,team),a:0,hp:c.hp,maxHp:c.hp,score:0,kills:0,deaths:0,dead:false,respawn:0,connected:true,input:{x:0,y:0,a:0,fire:false},cds:[0,0,0],shotCd:0,shield:0,shieldMax:0,shieldTime:0,invuln:0,invis:0,ricochetBoost:0,ultShots:3,ultTap:0,nextClass:null,tether:null,pull:null,portalLock:false,portalCd:0,dash:0,dashA:0,haste:0,root:0,overdrive:0,slow:0,buffs:{},noHit:0,vx:0,vy:0};
  room.players.set(id,p);return p;
 }
 function emit(room,event){room.events.push(event);}
 function enemy(room,a,b){return !a||!isTeamMode(room.mode)||a.team!==b.team;}
 function dropFlag(room,p,killer){if(room.mode!=='flag'||room.flag.owner!==p.id)return;room.flag.owner=killer&&!killer.dead&&killer.connected?killer.id:null;room.flag.x=p.x;room.flag.y=p.y;room.flag.clock=0;emit(room,{t:'flag',owner:room.flag.owner});}
 function kill(room,p,killer){
- if(p.dead||room.match.status!=='playing')return;p.dead=true;p.hp=0;p.respawn=isTeamMode(room.mode)?5:3;p.deaths++;p.input.fire=false;p.shield=0;p.shieldMax=0;p.shieldTime=0;p.invis=0;p.ricochetBoost=0;p.invuln=0;if(p.classId==='scout'&&p.ultShots<3)p.cds[2]=Math.max(p.cds[2],17);p.tether=null;p.pull=null;p.dash=0;p.haste=0;p.root=0;p.overdrive=0;p.slow=0;p.buffs={};
+ if(p.dead||room.match.status!=='playing')return;p.dead=true;p.hp=0;p.respawn=isTeamMode(room.mode)?5:3;p.deaths++;p.input.fire=false;p.shield=0;p.shieldMax=0;p.shieldTime=0;p.invis=0;p.ricochetBoost=0;p.invuln=0;if(p.classId==='scout'&&p.ultShots<3)p.cds[2]=Math.max(p.cds[2],17);p.portalLock=false;p.portalCd=0;p.tether=null;p.pull=null;p.dash=0;p.haste=0;p.root=0;p.overdrive=0;p.slow=0;p.buffs={};
  if(killer&&killer!==p&&enemy(room,killer,p)){killer.kills++;if(room.mode!=='flag'&&room.mode!=='zone'&&room.mode!=='zoneTeam')killer.score++;if(room.mode==='tdm')room.teamScores[killer.team]++;}
  else killer=null;
  dropFlag(room,p,killer);emit(room,{t:'death',id:p.id,killer:killer?.id||null,x:p.x,y:p.y});checkMatch(room);
@@ -244,11 +247,21 @@ function skill(room,p,index,target=null){
 function segmentDistance(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,t=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1),0,1);return Math.hypot(p.x-a.x-dx*t,p.y-a.y-dy*t);}
 function attachTether(room,p,owner){const anchors=[{x:0,y:p.y},{x:W,y:p.y},{x:p.x,y:0},{x:p.x,y:H}];for(const w of room.map.walls)anchors.push({x:clamp(p.x,w.x,w.x+w.w),y:w.y},{x:clamp(p.x,w.x,w.x+w.w),y:w.y+w.h},{x:w.x,y:clamp(p.y,w.y,w.y+w.h)},{x:w.x+w.w,y:clamp(p.y,w.y,w.y+w.h)});anchors.sort((a,b)=>distance(p,a)-distance(p,b));const a=anchors[0],wall=room.map.walls.find(w=>segmentDistance(a,{x:w.x,y:w.y},{x:w.x+w.w,y:w.y})<.01||segmentDistance(a,{x:w.x,y:w.y+w.h},{x:w.x+w.w,y:w.y+w.h})<.01||segmentDistance(a,{x:w.x,y:w.y},{x:w.x,y:w.y+w.h})<.01||segmentDistance(a,{x:w.x+w.w,y:w.y},{x:w.x+w.w,y:w.y+w.h})<.01);p.tether={wallId:wall?.id,offsetX:wall?a.x-wall.x:0,offsetY:wall?a.y-wall.y:0,x:a.x,y:a.y,length:Math.max(90,distance(p,a)+40),hits:5,life:8,owner};p.invis=0;emit(room,{t:'cast',x:p.x,y:p.y,color:'#63e4d5'});}
 function constrainTether(room,p,dt){const t=p.tether;if(!t)return;if(t.wallId){const wall=room.map.walls.find(w=>w.id===t.wallId);if(!wall){p.tether=null;return;}t.x=wall.x+t.offsetX;t.y=wall.y+t.offsetY;}t.life-=dt;if(t.life<=0){p.tether=null;return;}for(let i=0;i<6;i++){const d=distance(p,t);if(d<=t.length+.01)break;Object.assign(p,resolve(room.map,t.x+(p.x-t.x)/d*t.length,t.y+(p.y-t.y)/d*t.length));}if(distance(p,t)>t.length+2){p.x=t.lastX??p.x;p.y=t.lastY??p.y;}else{t.lastX=p.x;t.lastY=p.y;}}
+function usePortal(room,p,dt){
+ p.portalCd=Math.max(0,(p.portalCd||0)-dt);const portals=room.map.portals||[],entry=portals.find(q=>distance(p,q)<q.r);
+ if(!entry){p.portalLock=false;return false;}
+ if(p.portalLock||p.portalCd>0||p.tether||p.pull)return false;
+ const exit=portals.find(q=>q.id===entry.pair);if(!exit)return false;
+ const pos=resolve(room.map,exit.x,exit.y);if(distance(pos,exit)>2||(room.map.floors||[]).some(f=>f.state!=='solid'&&distance(f,pos)<f.r+RAD))return false;
+ const from={x:p.x,y:p.y};p.x=pos.x;p.y=pos.y;p.vx=p.vy=0;p.dash=0;p.portalLock=true;p.portalCd=1.25;p.brain=null;
+ if(room.flag.owner===p.id){room.flag.x=p.x;room.flag.y=p.y;}
+ emit(room,{t:'blink',id:p.id,...from,tx:p.x,ty:p.y});return true;
+}
 function updateArena(room,dt){
- const map=room.map;if(!map.gates)map.gates=map.walls.filter(w=>w.dynamic==='gate');
+ const map=room.map;
  let changed=false;
  for(const w of map.walls)if(w.dynamic==='moving'){const value=(w.axis==='x'?w.baseX:w.baseY)+Math.sin(room.time*.45)*45,key=w.axis;if(Math.abs(w[key]-value)>.01){const candidate={...w,[key]:value};if(!map.walls.some(o=>o!==w&&candidate.x<o.x+o.w+36&&candidate.x+candidate.w+36>o.x&&candidate.y<o.y+o.h+36&&candidate.y+candidate.h+36>o.y)&&!map.barrels.some(b=>b.hp>0&&Math.hypot(b.x-clamp(b.x,candidate.x,candidate.x+candidate.w),b.y-clamp(b.y,candidate.y,candidate.y+candidate.h))<34)){w[key]=value;changed=true;}}}
- for(const g of map.gates){const phase=room.time%12,wantsOpen=phase>=6;g.warning=phase>=4.5&&phase<6||phase>=10.5;const occupied=[...room.players.values()].some(p=>p.connected&&!p.dead&&p.x>g.x-35&&p.x<g.x+g.w+35&&p.y>g.y-35&&p.y<g.y+g.h+35);if(wantsOpen&&!g.open){g.open=true;map.walls=map.walls.filter(w=>w!==g);changed=true;}else if(!wantsOpen&&g.open&&!occupied){g.open=false;map.walls.push(g);changed=true;}}
+
  if(changed){map.revision=(map.revision||0)+1;room.botGrid=null;}
  for(const f of map.floors||[]){const on=[...room.players.values()].filter(p=>p.connected&&!p.dead&&distance(p,f)<f.r);if(f.state==='solid'&&on.length){f.state='cracking';f.timer=1.2;room.botGrid=null;}else if(f.state==='cracking'){f.timer-=dt;if(f.timer<=0){f.state='broken';f.timer=5;room.botGrid=null;}}else if(f.state==='broken'){for(const p of on){damage(room,p,35);if(!p.dead){Object.assign(p,safePosition(room,p.team));p.pull=null;p.tether=null;}}f.timer-=dt;if(f.timer<=0){f.state='solid';f.timer=0;room.botGrid=null;}}}
 }
@@ -306,6 +319,7 @@ function step(room,dt){
   const oldX=p.x,oldY=p.y,pos=resolve(room.map,p.x+mx*speed*dt,p.y+my*speed*dt);p.x=pos.x;p.y=pos.y;p.vx=(p.x-oldX)/dt;p.vy=(p.y-oldY)/dt;p.a=p.input.a;
   if(p.pull){const source=room.players.get(p.pull.owner);p.pull.life-=dt;if(!source||source.dead||!source.connected||p.pull.life<=0||distance(p,source)<65)p.pull=null;else{const d=distance(p,source),step=Math.min(900*dt,d-60);for(let k=0;k<4;k++)Object.assign(p,resolve(room.map,p.x+(source.x-p.x)/d*step/4,p.y+(source.y-p.y)/d*step/4));p.dash=0;}}
   constrainTether(room,p,dt);
+  usePortal(room,p,dt);
   if(p.input.fire)fire(room,p);
   for(let i=room.buffs.length-1;i>=0;i--)if(distance(p,room.buffs[i])<(p.buffs.magnet>0?90:31)&&(distance(p,room.buffs[i])<31||clearPath(room,p,room.buffs[i]))){pickup(room,p,room.buffs[i]);room.buffs.splice(i,1);}
  }
@@ -363,12 +377,12 @@ function step(room,dt){
 const round=n=>Math.round(n*10)/10;
 function snapshot(room,viewerId=null){
  const viewer=room.players.get(viewerId);
- const serialize=p=>({bot:!!p.bot,id:p.id,name:p.name,cosmetics:p.cosmetics,classId:p.classId,team:p.team,x:round(p.x),y:round(p.y),a:Math.round(p.a*1000)/1000,vx:round(p.vx||0),vy:round(p.vy||0),hp:round(p.hp),maxHp:p.maxHp,score:p.score,kills:p.kills,deaths:p.deaths,dead:!!p.dead,respawn:round(p.respawn||0),connected:p.connected!==false,cds:(p.cds||[0,0,0]).map(round),shield:round(p.shield||0),shieldMax:p.shieldMax||0,shieldTime:round(p.shieldTime||0),invuln:round(p.invuln||0),invis:p.id===viewerId||!enemy(room,viewer,p)?round(p.invis||0):0,ultShots:p.ultShots??3,nextClass:p.nextClass||null,ricochetBoost:round(p.ricochetBoost||0),dash:round(p.dash||0),haste:round(p.haste||0),root:round(p.root||0),overdrive:round(p.overdrive||0),slow:round(p.slow||0),tether:p.tether?{...p.tether}:null,pull:p.pull?{owner:p.pull.owner,life:p.pull.life}:null,buffs:Object.fromEntries(Object.entries(p.buffs||{}).map(([k,v])=>[k,round(v)]))});
+ const serialize=p=>({bot:!!p.bot,id:p.id,name:p.name,cosmetics:p.cosmetics,classId:p.classId,team:p.team,x:round(p.x),y:round(p.y),a:Math.round(p.a*1000)/1000,vx:round(p.vx||0),vy:round(p.vy||0),hp:round(p.hp),maxHp:p.maxHp,score:p.score,kills:p.kills,deaths:p.deaths,dead:!!p.dead,respawn:round(p.respawn||0),connected:p.connected!==false,cds:(p.cds||[0,0,0]).map(round),shield:round(p.shield||0),shieldMax:p.shieldMax||0,shieldTime:round(p.shieldTime||0),invuln:round(p.invuln||0),invis:p.id===viewerId||!enemy(room,viewer,p)?round(p.invis||0):0,ultShots:p.ultShots??3,nextClass:p.nextClass||null,ricochetBoost:round(p.ricochetBoost||0),dash:round(p.dash||0),haste:round(p.haste||0),root:round(p.root||0),overdrive:round(p.overdrive||0),slow:round(p.slow||0),tether:p.tether?{...p.tether}:null,pull:p.pull?{owner:p.pull.owner,life:p.pull.life}:null,portalCd:round(p.portalCd||0),buffs:Object.fromEntries(Object.entries(p.buffs||{}).map(([k,v])=>[k,round(v)]))});
  const visible=[...room.players.values()].filter(p=>p.invis<=0||p.id===viewerId||!enemy(room,viewer,p)||room.flag.owner===p.id).map(serialize);
  for(const d of room.decoys)if(d.life>0){const copy=serialize(d);if(viewerId===d.owner||!enemy(room,viewer,d))copy.allyDecoy=true;visible.push(copy);}
  const active=[...room.players.values()].filter(p=>p.connected&&!p.bot);
  return{t:'state',match:{round:room.match.round,status:room.match.status,target:room.match.target,winner:room.match.winner,results:room.match.results,finishedAt:round(room.match.finishedAt),ready:room.match.ready.has(viewerId),readyCount:active.filter(p=>room.match.ready.has(p.id)).length,required:active.length},time:Math.round(room.time*100)/100,mode:room.mode,teamScores:room.teamScores,flag:room.mode==='flag'?room.flag:null,zone:(room.mode==='zone'||room.mode==='zoneTeam')?room.zone:null,
- walls:room.map.walls,gates:room.map.gates||[],floors:room.map.floors||[],
+ walls:room.map.walls,portals:room.map.portals||[],floors:room.map.floors||[],
  roster:[...room.players.values()].map(p=>({bot:!!p.bot,id:p.id,name:p.name,cosmetics:p.cosmetics,classId:p.classId,team:p.team,score:p.score,kills:p.kills,connected:p.connected})),players:visible,
  bullets:room.bullets.map(b=>({id:b.id,owner:b.owner,x:round(b.x),y:round(b.y),vx:round(b.vx),vy:round(b.vy),bomb:b.bomb,kind:b.kind,color:b.color,hitRadius:b.hitRadius})),
  barrels:room.map.barrels.map(b=>({id:b.id,hp:b.hp,respawn:round(b.respawn)})),buffs:room.buffs,mines:room.mines,

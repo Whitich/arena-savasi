@@ -29,6 +29,7 @@ function think(room,p){const brain=p.brain,c=G.CLASSES[p.classId];
  const nearby=room.buffs.filter(b=>dist(p,b)<(objective?100:170)&&(dist(p,b)<65||dist(p,b)+dist(b,goal)-dist(p,goal)<(objective?75:130))&&clear(room,p,b)).sort((a,b)=>dist(p,a)-dist(p,b))[0];if(nearby)goal=nearby;
  // Health packs are worth a short detour; objectives still take priority.
  if(p.hp<p.maxHp*.45){const heal=room.buffs.filter(b=>['heal','smallheal','regen','shield','titan'].includes(b.kind)&&dist(p,b)<(objective?140:300)).sort((a,b)=>dist(p,a)-dist(p,b))[0];if(heal)goal=heal;}
+ if(!p.portalLock&&!(p.portalCd>0)&&!p.tether&&!p.pull){const shortcut=(room.map.portals||[]).map(entry=>({entry,exit:room.map.portals.find(q=>q.id===entry.pair)})).filter(q=>q.exit&&dist(p,q.entry)+dist(q.exit,goal)+150<dist(p,goal)).sort((a,b)=>dist(p,a.entry)+dist(a.exit,goal)-dist(p,b.entry)-dist(b.exit,goal))[0];if(shortcut)goal=shortcut.entry;}
  // Replan stalled routes and keep each waypoint reachable from the actual position.
  if(!brain.progress||dist(p,brain.progress)>22){brain.progress={x:p.x,y:p.y};brain.progressAt=room.time;}
  const stuck=room.time-(brain.progressAt||0)>.8;

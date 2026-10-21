@@ -34,7 +34,7 @@ test('resume token restores own player, copied id cannot impersonate and rooms r
 test('static assets and deployment health are served',async t=>{
  const app=await fixture(t),base='http://127.0.0.1:'+app.server.address().port;
  for(const file of ['/','/client.js','/game-core.js','/server-config.js'])assert.equal((await fetch(base+file)).status,200);
- assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'3.8.0');assert.equal((await fetch(base+'/server.cjs')).status,404);
+ assert.equal((await fetch(base+'/health').then(r=>r.json())).release,'3.8.1');assert.equal((await fetch(base+'/server.cjs')).status,404);
 });
 test('invisibility is filtered per real WebSocket recipient, then firing reveals the assassin',async t=>{
  const app=await fixture(t),a=await app.connect(),b=await app.connect();a.json(join('create','HIDDEN',{mode:'normal',classId:'assassin'}));const aw=await packet(a,o=>o.t==='welcome');b.json(join('join','HIDDEN'));await packet(b,o=>o.t==='welcome');
@@ -65,3 +65,5 @@ test('bots run real combat over WebSocket and yield a slot to a human when room 
 });
 
 test('net constraints and five rope hits synchronize between real clients',async t=>{const app=await fixture(t),a=await app.connect(),b=await app.connect();a.json(join('create','ROPE',{mode:'normal',classId:'trapper'}));const aw=await packet(a,o=>o.t==='welcome');b.json(join('join','ROPE',{classId:'guardian'}));const bw=await packet(b,o=>o.t==='welcome');const r=app.rooms.get('ROPE'),pa=r.players.get(aw.id),pb=r.players.get(bw.id);r.map={walls:[{x:700,y:200,w:60,h:600}],barrels:[],hazards:[],floors:[]};Object.assign(pa,{x:250,y:500,invuln:0});Object.assign(pb,{x:600,y:500,invuln:0});a.json({t:'skill',index:2,a:0});const hit=await packet(b,o=>o.t==='state'&&o.players.some(p=>p.id===bw.id&&p.tether));assert.equal(hit.players.find(p=>p.id===bw.id).tether.hits,5);for(let i=0;i<5;i++){pb.shotCd=0;b.json({t:'input',x:0,y:0,a:0,fire:true});await new Promise(r=>setTimeout(r,70));b.json({t:'input',x:0,y:0,a:0,fire:false});}await packet(a,o=>o.t==='state'&&o.players.some(p=>p.id===bw.id&&!p.tether));assert.equal(pb.tether,null);});
+
+test('portal transport and pair positions synchronize over WebSocket',async t=>{const app=await fixture(t),a=await app.connect();a.json(join('create','PORTALS',{mode:'normal'}));const aw=await packet(a,o=>o.t==='welcome');assert.equal(aw.state.portals.length,2);const r=app.rooms.get('PORTALS'),p=r.players.get(aw.id),entry=r.map.portals[0],exit=r.map.portals[1];Object.assign(p,{x:entry.x,y:entry.y});const moved=await packet(a,o=>o.t==='state'&&o.players.some(p=>p.id===aw.id&&Math.hypot(p.x-exit.x,p.y-exit.y)<2));assert.equal(moved.portals.length,2);assert.ok(moved.players.find(p=>p.id===aw.id).portalCd>0);});
