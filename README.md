@@ -1,4 +1,4 @@
-# Arena Savaşı · 3.7.1
+# Arena Savaşı · 3.7.2
 
 Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme ve oyuncu hesabı gerekmez.
 
