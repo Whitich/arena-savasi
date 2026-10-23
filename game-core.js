@@ -137,8 +137,8 @@ function restartMatch(room){
  }
  emit(room,{t:'matchStart',round});
 }
-function addPlayer(room,id,name,classId='assault',cosmetics={}){
- const team=isTeamMode(room.mode)?([0,1].map(t=>[...room.players.values()].filter(p=>p.connected&&p.team===t).length).reduce((best,n,i,a)=>n<a[best]?i:best,0)):null;
+function addPlayer(room,id,name,classId='assault',cosmetics={},requestedTeam=null){
+ const team=isTeamMode(room.mode)?(requestedTeam===0||requestedTeam===1?requestedTeam:([0,1].map(t=>[...room.players.values()].filter(p=>p.connected&&p.team===t).length).reduce((best,n,i,a)=>n<a[best]?i:best,0))):null;
  const c=CLASSES[classId]||CLASSES.assault;
  const p={id,cosmetics:normalizeCosmetics(cosmetics,id),name:String(name||'Oyuncu').slice(0,14),classId:CLASSES[classId]?classId:'assault',team,...safePosition(room,team),a:0,hp:c.hp,maxHp:c.hp,score:0,kills:0,deaths:0,dead:false,respawn:0,connected:true,input:{x:0,y:0,a:0,fire:false},cds:[0,0,0],shotCd:0,shield:0,shieldMax:0,shieldTime:0,invuln:0,invis:0,ricochetBoost:0,ultShots:3,ultTap:0,nextClass:null,tether:null,pull:null,portalLock:false,portalCd:0,dash:0,dashA:0,haste:0,root:0,overdrive:0,slow:0,buffs:{},noHit:0,vx:0,vy:0};
  room.players.set(id,p);return p;

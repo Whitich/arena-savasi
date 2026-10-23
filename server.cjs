@@ -2,7 +2,7 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
 const Game=require('./game-core.js'),Bots=require('./bot-ai.cjs');
-const VERSION='3.8.1';
+const VERSION='3.8.2';
 function createArenaServer(options={}){
  const rooms=new Map(),sessions=new Map();
  const server=http.createServer((req,res)=>{
@@ -32,6 +32,8 @@ function createArenaServer(options={}){
     let o;try{o=JSON.parse(bytes.toString());}catch{return;}if(!o||typeof o!=='object'||Array.isArray(o))return;
     if(o.t==='create'||o.t==='join'){
      if(ws.player)return;
+     if(o.team!==undefined&&o.team!==0&&o.team!==1)return error(ws,'Kırmızı veya mavi takım seç.');
+     if(o.t==='create'&&o.botTeam!==undefined&&o.botTeam!==0&&o.botTeam!==1)return error(ws,'Botlar için kırmızı veya mavi takım seç.');
      let code=String(o.code||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8),r;
      if(o.t==='create'){
       if(!Object.hasOwn(Game.CLASSES,o.classId))return error(ws,'Bir sınıf seç.');
@@ -52,10 +54,10 @@ function createArenaServer(options={}){
      if(!p){
       if(!Object.hasOwn(Game.CLASSES,o.classId))return error(ws,'Bir sınıf seç.');
       let active=[...r.players.values()].filter(p=>p.connected).length;if(active>=16){const bot=[...r.players.values()].find(p=>p.bot);if(bot){Game.dropFlag(r,bot,null);r.players.delete(bot.id);r.bullets=r.bullets.filter(b=>b.owner!==bot.id);r.mines=r.mines.filter(b=>b.owner!==bot.id);r.decoys=r.decoys.filter(b=>b.owner!==bot.id);r.botCount--;active--;}else return error(ws,'Oda dolu (16 oyuncu).');}
-      p=Game.addPlayer(r,crypto.randomUUID(),o.name,o.classId,o.cosmetics);p.ws=ws;p.invuln=1;p.lastInputAt=now;
+      p=Game.addPlayer(r,crypto.randomUUID(),o.name,o.classId,o.cosmetics,o.team);p.ws=ws;p.invuln=1;p.lastInputAt=now;
       token=crypto.randomBytes(24).toString('hex');sessions.set(token,{id:p.id,code});p.token=token;
      }
-     if(o.t==='create'&&o.botsEnabled===true)Bots.addBots(r,o.botCount);
+     if(o.t==='create'&&o.botsEnabled===true)Bots.addBots(r,o.botCount,o.botTeam);
      if(o.cosmetics)p.cosmetics=Game.normalizeCosmetics(o.cosmetics,p.id);
      ws.room=r;ws.player=p;r.emptyAt=0;clearTimeout(ws.joinTimer);welcome(ws,r,p,token);broadcast(r,{t:'joined',id:p.id,name:p.name});return;
     }

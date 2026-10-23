@@ -1,4 +1,4 @@
-# Arena Savaşı · 3.8.1
+# Arena Savaşı · 3.8.2
 
 Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme ve oyuncu hesabı gerekmez.
 
@@ -25,6 +25,12 @@ Oda kapasitesi insan ve bot toplamı 16 oyuncudur. Her modun yanında varsayıla
 Alan her 15 saniyede taşınır. Tehlikeler yalnızca Normal Arena'dadır. Metal testereler dönüş izi, mekanik taretler atışta namlu parlaması gösterir. Lav aktifleşmeden önce ısınma uyarısı verir; kızgın çatlaklar ve korlar aktif bölgeyi belirginleştirir. Bu görseller hasarı veya tehlike sürelerini değiştirmez. Takımlı modlarda ölüm ekranından sınıf değiştirilebilir; yeniden doğuş 5 saniyedir. Diğer modlarda 3 saniyedir.
 
 Hedef tamamlanınca kazanan ve sonuç tablosu gösterilir. Bağlı herkes **Rövanşa Hazırım** dediğinde aynı odada yeni tur başlar. Skor, can, buff ve yetenek beklemeleri sıfırlanır; görünüm ve oyuncu kimliği korunur.
+
+## Serbest takım seçimi
+
+Takım Ölüm Maçı ve takımlı Alan Hakimiyeti'nde **Takımın** alanından 1. takım (Kırmızı) veya 2. takım (Mavi) seçilir. Takım sayıları eşit olmak zorunda değildir; seçimin otomatik dengeleme ile değiştirilmez. Botları açınca **Botların takımı** seçeneğiyle hepsini istediğin tarafa ekleyebilirsin. Varsayılan oyuncu takımı kırmızı, bot takımı mavidir.
+
+**2 arkadaş vs 4 bot:** Takımlı modu seç, kendi takımını Kırmızı yap, 4 bot ekle ve botların takımını Mavi seç. Arkadaşın aynı oda koduyla katılırken Kırmızı seçsin. Skor alanında takım başına oyuncu sayısı da gösterilir. Bağlantı yenilenmesi ve rövanş takımları korur; tekli modlar takım seçimini kullanmaz.
 
 ## Sunucuda çalışan botlar
 
