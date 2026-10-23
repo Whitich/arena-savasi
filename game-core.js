@@ -133,7 +133,7 @@ function restartMatch(room){
  for(const p of room.players.values())p.dead=true;
  for(const p of room.players.values()){
   if(p.nextClass)p.classId=p.nextClass;
-  Object.assign(p,{...safePosition(room,p.team),maxHp:CLASSES[p.classId].hp,hp:CLASSES[p.classId].hp,score:0,kills:0,deaths:0,dead:false,respawn:0,cds:[0,0,0],shotCd:0,shield:0,shieldMax:0,shieldTime:0,invuln:1,invis:0,ricochetBoost:0,ultShots:3,ultTap:0,nextClass:null,tether:null,pull:null,portalLock:false,portalCd:0,dash:0,haste:0,root:0,overdrive:0,slow:0,buffs:{},noHit:0,vx:0,vy:0,input:{x:0,y:0,a:p.a,fire:false}});
+  Object.assign(p,{...safePosition(room,p.team),maxHp:CLASSES[p.classId].hp,hp:CLASSES[p.classId].hp,score:0,kills:0,deaths:0,dead:false,respawn:0,cds:[0,0,0],shotCd:0,shield:0,shieldMax:0,shieldTime:0,invuln:1.5,invis:0,ricochetBoost:0,ultShots:3,ultTap:0,nextClass:null,tether:null,pull:null,portalLock:false,portalCd:0,dash:0,haste:0,root:0,overdrive:0,slow:0,buffs:{},noHit:0,vx:0,vy:0,input:{x:0,y:0,a:p.a,fire:false}});
  }
  emit(room,{t:'matchStart',round});
 }
@@ -167,7 +167,7 @@ function hurtDecoy(room,d,amount,owner){
  if(d.hp<=0){d.life=0;emit(room,{t:'vanish',x:d.x,y:d.y});}
 }
 function queueClass(room,p,classId){
- if(room.match.status!=='playing'||!isTeamMode(room.mode)||!p.dead||!Object.hasOwn(CLASSES,classId))return false;
+ if(room.match.status!=='playing'||!p.dead||!Object.hasOwn(CLASSES,classId))return false;
  p.nextClass=classId;return true;
 }
 function blast(room,x,y,r,amount,owner=null,color='#ffad68'){
@@ -190,7 +190,7 @@ function makeBullet(room,p,angle,options={}){
 }
 function fire(room,p){
  if(room.match.status!=='playing'||p.dead||!p.connected||p.shotCd>0)return false;
- p.invis=0;const c=CLASSES[p.classId],bomb=p.buffs.launcher>0,dual=p.buffs.double>0,multi=p.buffs.multishot>0,count=multi?(dual?4:3):(dual?2:1),shotScale=multi?(dual?.5:.6):(dual?.76:1);
+ p.invuln=0;p.invis=0;const c=CLASSES[p.classId],bomb=p.buffs.launcher>0,dual=p.buffs.double>0,multi=p.buffs.multishot>0,count=multi?(dual?4:3):(dual?2:1),shotScale=multi?(dual?.5:.6):(dual?.76:1);
  p.shotCd=(bomb?.68:c.interval)*(p.buffs.rapid>0?.58:1)*(dual?1.08:1)*(p.overdrive>0?1/1.3:1);
  const opts=bomb?{bomb:true,speed:470*(p.ricochetBoost>0?1.15:1),life:1.1,damage:count>1?58*shotScale*.88:58,r:count>1?78:95}:{damage:c.damage*shotScale};
  if(p.ricochetBoost>0&&!bomb)opts.speed=(c.bulletSpeed||720)*1.15;
@@ -210,14 +210,14 @@ function skill(room,p,index,target=null){
  if(room.match.status!=='playing'||p.dead||!p.connected||!Number.isInteger(index)||index<0||index>2||p.cds[index]>0)return false;
  const c=CLASSES[p.classId];if(p.pull&&index===0)return false;if(p.root>0&&index===0)return false;
  if(p.classId==='scout'&&index===2){
-  if(room.time<p.ultTap)return false;p.ultTap=room.time+.22;p.invis=0;
+  if(room.time<p.ultTap)return false;p.ultTap=room.time+.22;p.invuln=0;p.invis=0;
   if(p.ultShots<=0)p.ultShots=3;p.ultShots--;
   makeBullet(room,p,p.a,{speed:1120,life:1.1,damage:42,scalePower:false});
   if(p.ultShots===0)p.cds[2]=c.skills[2].cd;
   emit(room,{t:'shot',id:p.id,x:p.x,y:p.y,bomb:false});return true;
  }
  if(p.classId==='assassin'&&index===1&&room.flag.owner===p.id)return false;
- p.cds[index]=c.skills[index].cd;
+ p.invuln=0;p.cds[index]=c.skills[index].cd;
  if(p.classId==='trapper'&&index>0){p.invis=0;makeBullet(room,p,p.a,{kind:index===1?'hook':'net',speed:index===1?800:600,life:index===1?.65:1,damage:index===1?18:12,hitRadius:index===1?13:26,bounces:0,scalePower:false});emit(room,{t:'cast',x:p.x,y:p.y,color:'#63e4d5'});}
  else if(p.classId==='mage'){
   if(index===2){makeBullet(room,p,p.a,{speed:640,life:1.2,damage:34,pierce:2,kind:'arcane',color:'#ca9aff',bounces:0,scalePower:false});emit(room,{t:'cast',x:p.x,y:p.y,color:'#ca9aff'});}
@@ -305,7 +305,7 @@ function step(room,dt){
  room.time+=dt;updateArena(room,dt);
  for(const p of room.players.values()){
   if(!p.connected)continue;
-  if(p.dead){p.respawn-=dt;if(p.respawn<=0){if(p.nextClass){p.classId=p.nextClass;p.nextClass=null;p.maxHp=CLASSES[p.classId].hp;p.cds=CLASSES[p.classId].skills.map(s=>s.cd*.5);}p.ultShots=3;p.dead=false;p.hp=p.maxHp;Object.assign(p,safePosition(room,p.team));p.tether=null;p.pull=null;p.shield=0;p.shieldMax=0;p.shieldTime=0;p.invuln=1;p.noHit=0;p.vx=p.vy=0;emit(room,{t:'respawn',id:p.id,x:p.x,y:p.y});}continue;}
+  if(p.dead){p.respawn-=dt;if(p.respawn<=0){if(p.nextClass){p.classId=p.nextClass;p.nextClass=null;p.maxHp=CLASSES[p.classId].hp;p.cds=CLASSES[p.classId].skills.map(s=>s.cd*.5);}p.ultShots=3;p.dead=false;p.hp=p.maxHp;Object.assign(p,safePosition(room,p.team));p.tether=null;p.pull=null;p.shield=0;p.shieldMax=0;p.shieldTime=0;p.invuln=1.5;p.noHit=0;p.vx=p.vy=0;emit(room,{t:'respawn',id:p.id,x:p.x,y:p.y});}continue;}
   for(let i=0;i<3;i++)p.cds[i]=Math.max(0,p.cds[i]-dt*(p.buffs.focus>0?1.25:1));
   for(const k of Object.keys(p.buffs)){p.buffs[k]-=dt;if(p.buffs[k]<=0)delete p.buffs[k];}
   if(p.shield>0){p.shieldTime=Math.max(0,p.shieldTime-dt);if(p.shieldTime<.000001){p.shield=0;p.shieldMax=0;p.shieldTime=0;emit(room,{t:'shieldExpire',id:p.id,x:p.x,y:p.y});}}

@@ -2,7 +2,7 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
 const Game=require('./game-core.js'),Bots=require('./bot-ai.cjs');
-const VERSION='3.8.2';
+const VERSION='3.8.3';
 function createArenaServer(options={}){
  const rooms=new Map(),sessions=new Map();
  const server=http.createServer((req,res)=>{
@@ -54,7 +54,7 @@ function createArenaServer(options={}){
      if(!p){
       if(!Object.hasOwn(Game.CLASSES,o.classId))return error(ws,'Bir sınıf seç.');
       let active=[...r.players.values()].filter(p=>p.connected).length;if(active>=16){const bot=[...r.players.values()].find(p=>p.bot);if(bot){Game.dropFlag(r,bot,null);r.players.delete(bot.id);r.bullets=r.bullets.filter(b=>b.owner!==bot.id);r.mines=r.mines.filter(b=>b.owner!==bot.id);r.decoys=r.decoys.filter(b=>b.owner!==bot.id);r.botCount--;active--;}else return error(ws,'Oda dolu (16 oyuncu).');}
-      p=Game.addPlayer(r,crypto.randomUUID(),o.name,o.classId,o.cosmetics,o.team);p.ws=ws;p.invuln=1;p.lastInputAt=now;
+      p=Game.addPlayer(r,crypto.randomUUID(),o.name,o.classId,o.cosmetics,o.team);p.ws=ws;p.invuln=1.5;p.lastInputAt=now;
       token=crypto.randomBytes(24).toString('hex');sessions.set(token,{id:p.id,code});p.token=token;
      }
      if(o.t==='create'&&o.botsEnabled===true)Bots.addBots(r,o.botCount,o.botTeam);

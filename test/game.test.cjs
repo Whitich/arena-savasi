@@ -79,9 +79,9 @@ test('jester clone looks like the owner to enemies, moves, fires, has no scorebo
 test('compatible buffs combine dual explosive rounds, power, rapid fire and longer projectile range',()=>{
  const r=empty(),p=add(r);p.buffs={double:10,launcher:10,power:10,rapid:10,range:10};G.fire(r,p);assert.equal(r.bullets.length,2);for(const b of r.bullets){assert.equal(b.bomb,true);assert.ok(b.damage>39);assert.ok(b.life>1.5);}assert.ok(p.shotCd<.5);
 });
-test('class changes are queued only during a TDM death and applied at respawn with score/team preserved',()=>{
+test('class changes are queued only during death and applied at respawn with score/team preserved',()=>{
  const r=empty('tdm'),p=add(r,'a');p.score=4;assert.equal(G.queueClass(r,p,'mage'),false);G.damage(r,p,1000);assert.equal(p.dead,true);assert.equal(G.queueClass(r,p,'mage'),true);assert.equal(p.classId,'assault');const team=p.team;advance(r,5.1);assert.equal(p.classId,'mage');assert.equal(p.maxHp,90);assert.equal(p.hp,90);assert.equal(p.score,4);assert.equal(p.team,team);
- const ffa=empty();const solo=add(ffa);G.damage(ffa,solo,1000);assert.equal(G.queueClass(ffa,solo,'scout'),false);
+ const ffa=empty();const solo=add(ffa);G.damage(ffa,solo,1000);assert.equal(G.queueClass(ffa,solo,'scout'),true);
 });
 test('zone awards survival time only to an uncontested player, preserves score and moves after 15s',()=>{
  const r=empty('zone'),p=add(r,'a'),opponent=add(r,'b');Object.assign(p,{x:800,y:500});Object.assign(opponent,{x:100,y:100});advance(r,2.1);assert.equal(p.score,2);Object.assign(opponent,{x:810,y:500});advance(r,2);assert.equal(p.score,2);assert.equal(r.zone.contested,true);Object.assign(opponent,{x:100,y:100});advance(r,1.1);assert.equal(p.score,3);const old={x:r.zone.x,y:r.zone.y};advance(r,10);assert.ok(Math.hypot(r.zone.x-old.x,r.zone.y-old.y)>290);assert.equal(r.zone.nextAt,30);assert.ok(p.score>=3);
@@ -154,3 +154,6 @@ test('spawn cadence is moderately faster, respects cap, valid positions and all 
 test('shield and titan pickups refresh five-second shield independently of titan armor duration',()=>{
  for(const kind of ['shield','titan']){const r=empty(),p=add(r);take(r,p,kind);assert.equal(p.shieldTime,5);advance(r,4);assert.equal(p.shield,35);take(r,p,kind);assert.equal(p.shield,70);assert.equal(G.snapshot(r,p.id).players[0].shieldTime,5);advance(r,5);assert.equal(p.shield,0);assert.equal(p.shieldMax,0);if(kind==='titan')assert.ok(p.buffs.titan>4.9);}
 });
+
+test('all modes allow death class selection and grant exactly 1.5 seconds of respawn protection',()=>{for(const mode of Object.keys(G.MODES)){const r=empty(mode),p=add(r);p.score=7;G.kill(r,p,null);assert.equal(G.queueClass(r,p,'mage'),true);assert.equal(G.queueClass(r,p,'invalid'),false);p.respawn=.01;advance(r,.025);assert.equal(p.classId,'mage');assert.equal(p.invuln,1.5);assert.equal(p.score,7);const hp=p.hp;G.damage(r,p,20);assert.equal(p.hp,hp);advance(r,1.475);G.damage(r,p,20);assert.equal(p.hp,hp);advance(r,.05);G.damage(r,p,20);assert.equal(p.hp,hp-20);}});
+test('successful fire and every class ability immediately remove protection, rejected actions preserve it',()=>{for(const id of Object.keys(G.CLASSES)){for(let index=0;index<3;index++){const r=empty(),p=add(r,'one',id);p.invuln=1.5;assert.equal(G.skill(r,p,index),true);assert.equal(p.invuln,0,id+' skill '+index);p.invuln=1.5;p.cds[index]=10;assert.equal(G.skill(r,p,index),false);assert.equal(p.invuln,1.5);}const r=empty(),p=add(r,'one',id);p.invuln=1.5;p.shotCd=1;assert.equal(G.fire(r,p),false);assert.equal(p.invuln,1.5);p.shotCd=0;assert.equal(G.fire(r,p),true);assert.equal(p.invuln,0);G.damage(r,p,10);assert.equal(p.hp,p.maxHp-10);}});

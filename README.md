@@ -1,4 +1,4 @@
-# Arena Savaşı · 3.8.2
+# Arena Savaşı · 3.8.3
 
 Arkadaşlarınla bağlantıyı paylaş, tarayıcıdan arenaya katıl. İndirme ve oyuncu hesabı gerekmez.
 
@@ -22,7 +22,7 @@ Oda kapasitesi insan ve bot toplamı 16 oyuncudur. Her modun yanında varsayıla
 | Alan Hakimiyeti · Tekli | Toplam 100 alan saniyesi | Tek oyuncu alanı tutarsa puan alır; rakip girince durur |
 | Alan Hakimiyeti · Takımlı | Toplam 100 takım saniyesi | Rakipsiz takım saniyede yalnızca 1 ortak puan alır; rakip girince durur |
 
-Alan her 15 saniyede taşınır. Tehlikeler yalnızca Normal Arena'dadır. Metal testereler dönüş izi, mekanik taretler atışta namlu parlaması gösterir. Lav aktifleşmeden önce ısınma uyarısı verir; kızgın çatlaklar ve korlar aktif bölgeyi belirginleştirir. Bu görseller hasarı veya tehlike sürelerini değiştirmez. Takımlı modlarda ölüm ekranından sınıf değiştirilebilir; yeniden doğuş 5 saniyedir. Diğer modlarda 3 saniyedir.
+Alan her 15 saniyede taşınır. Tehlikeler yalnızca Normal Arena'dadır. Metal testereler dönüş izi, mekanik taretler atışta namlu parlaması gösterir. Lav aktifleşmeden önce ısınma uyarısı verir; kızgın çatlaklar ve korlar aktif bölgeyi belirginleştirir. Bu görseller hasarı veya tehlike sürelerini değiştirmez. Tüm modlarda ölüm ekranından sınıf değiştirilebilir; yeniden doğuş 5 saniyedir. Diğer modlarda 3 saniyedir.
 
 Hedef tamamlanınca kazanan ve sonuç tablosu gösterilir. Bağlı herkes **Rövanşa Hazırım** dediğinde aynı odada yeni tur başlar. Skor, can, buff ve yetenek beklemeleri sıfırlanır; görünüm ve oyuncu kimliği korunur.
 
@@ -111,7 +111,7 @@ Lobiden veya maç içindeki harita görünümü düğmesinden seçilir. Zemin de
 - Kalkan gelen hasarı önce kendi canından karşılar; taşan hasar normal cana geçer. **Kalkan canı 5 saniye sonra kendiliğinden silinir.** Yeni kalkan kazanımı süreyi yeniler. Bufflarla toplam en fazla 120 kalkan canı olur.
 - Titan Zırhı'nın kalkan kısmı 5 saniye, hasar azaltma kısmı 10 saniyedir.
 - Pasif can yenileme, son hasardan 8 saniye sonra saniyede 1 candır.
-- Yeniden doğuş koruması ayrı olarak 1 saniyedir.
+- Yeniden doğuş koruması 1,5 saniyedir. Bu sürede hasar alınmaz; başarılı bir atış veya herhangi bir yetenek kullanımı korumayı hemen kaldırır. Beklemedeki/geçersiz yetenek denemesi korumayı kaldırmaz.
 - İsabet işareti, hasar sayıları, kalkan kırılma efekti, öldürme sesi ve kritik can uyarısı vardır. Yakındaki oyuncuların ateş sesleri mesafe ve yöne göre duyulur.
 - TNT patladıktan 20 saniye sonra geri gelir; üzerinde oyuncu varsa bekler.
 

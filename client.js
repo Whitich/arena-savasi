@@ -394,7 +394,7 @@ function draw(now){
   drawCosmetics(p,pos.x,pos.y);
   drawWeapon(p,pos.x,pos.y,angle);
   if(p.shield>0)circle(pos.x,pos.y,26+Math.sin(now/100),null,'#78e6ef',2);
-  if(p.invuln>0)circle(pos.x,pos.y,29,null,'#ffffff88',1);
+  if(p.invuln>0){circle(pos.x,pos.y,29,null,'#b8f4ffcc',2);ctx.fillStyle='#c4f7ff';ctx.textAlign='center';ctx.font='bold 10px Segoe UI';ctx.fillText('KORUMA '+p.invuln.toFixed(1)+'sn',pos.x,pos.y-42);}
   if(p.root>0){circle(pos.x,pos.y,24,null,'#83e8ff',3);ctx.fillStyle='#b9f5ff';ctx.font='bold 18px Segoe UI';ctx.fillText('❄',pos.x,pos.y-48);}
   if(p.buffs.armor>0||p.buffs.titan>0)circle(pos.x,pos.y,22,null,p.buffs.titan>0?'#ffd16699':'#69adff88',2);
   if(p.buffs.regen>0)circle(pos.x,pos.y,19,null,'#69d99066',1);
@@ -448,11 +448,11 @@ function updateHUD(){
  if(roomMode==='zone'||roomMode==='zoneTeam'){const z=world.zone;$('modeNotice').textContent=`◎ ${z.contested?'Alan çekişmeli · puan durdu':(z.holder===myId||roomMode==='zoneTeam'&&z.team===me.team)?'Alan sende · saniyede +1 puan':(roomMode==='zoneTeam'?'Takımınla alanı tut':'Alanı tek başına tut')} · ${Math.max(0,Math.ceil(z.nextAt-world.time))}s sonra taşınır`;}
  else if(roomMode==='flag'){const carrier=knownPlayer(world.flag?.owner);$('modeNotice').textContent=carrier?`⚑ ${carrier.name} bayrağı taşıyor · her saniye +1 puan`:'⚑ Ortadaki bayrağı al. Taşıyanı öldürürsen bayrak sana geçer.';}
  else $('modeNotice').textContent=G.isTeamMode(roomMode)?`${me.team===0?'Kırmızı':'Mavi'} takımdasın · dost ateşi kapalı · tehlikeler kapalı`:'Normal Arena · hareketli duvarlar, portallar ve kırılgan zemine dikkat!';
- $('deathClassPanel').classList.toggle('hidden',!G.isTeamMode(roomMode)||!me.dead);
- if(G.isTeamMode(roomMode)&&me.dead){
+ $('deathClassPanel').classList.toggle('hidden',!me.dead);
+ if(me.dead){
   setHTML($('deathClasses'),Object.entries(CLASSES).map(([id,c])=>`<button data-death-class="${id}" class="${(me.nextClass||me.classId)===id?'selected':''}">${c.icon} ${c.name}</button>`).join(''));
   $('nextClassText').textContent=me.nextClass?'Yeniden doğunca: '+CLASSES[me.nextClass].name:'Yeniden doğmadan sınıfını seçebilirsin.';
  }
- $('respawn').textContent='Yeniden doğuş: '+Math.max(0,me.respawn).toFixed(1)+' saniye';$('hint').textContent=`${keyLabel(bindings.skill1)} / ${keyLabel(bindings.skill2)} / ${keyLabel(bindings.skill3)}: yetenekler · ${keyLabel(bindings.mute)}: ses`;
+ $('respawn').textContent='Yeniden doğuş: '+Math.max(0,me.respawn).toFixed(1)+' saniye';$('hint').textContent=me.invuln>0&&!me.dead?'Doğuş koruması: '+me.invuln.toFixed(1)+'sn · Ateş veya yetenek kullanınca kalkar':`${keyLabel(bindings.skill1)} / ${keyLabel(bindings.skill2)} / ${keyLabel(bindings.skill3)}: yetenekler · ${keyLabel(bindings.mute)}: ses`;
 }
 renderLobby();
